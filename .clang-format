@@ -1,0 +1,10 @@
+Language: Cpp
+BasedOnStyle: Google
+
+SortIncludes: false
+AllowShortEnumsOnASingleLine: false
+
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 90
+MaxEmptyLinesToKeep: 2
