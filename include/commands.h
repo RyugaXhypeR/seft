@@ -8,9 +8,6 @@
 #define MAX_NUM_COMMANDS 6
 
 #define COMMAND(name) cli_command_##name
-#define __NUM_ARGS(type, ...) (sizeof((type[]){__VA_ARGS__})) / (sizeof(type))
-#define REGISTER(...)                                                                    \
-    __register_commands(__NUM_ARGS(CommandHandlerT *, __VA_ARGS__), __VA_ARGS__)
 
 
 typedef enum {
@@ -42,9 +39,6 @@ void CommandHandler_display_help_msg(CommandHandlerT *self);
 
 /** Helper function */
 CommandHandlerT *get_command_handler_from_name(const char *command_name);
-
-void __register_commands(size_t num_args, ...);
-
 
 /** Commands */
 CommandStatusE COMMAND(help)(ArgsT args);

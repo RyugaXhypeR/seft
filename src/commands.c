@@ -7,14 +7,19 @@
 #include <string.h>
 
 /** All the commands supported by the program. */
-const char *COMMANDS[MAX_NUM_COMMANDS] = {"help",   "list", "create",
-                                          "remove", "copy", "move"};
-static CommandHandlerT *command_handlers[MAX_NUM_COMMANDS];
-static size_t num_command_handler = 0;
+const char *COMMANDS[MAX_NUM_COMMANDS] = {"help", "list", "create", "remove", "copy", "move"};
+static CommandHandlerT COMMAND_HANDLERS[MAX_NUM_COMMANDS] = {
+    {"help", "prints this message", COMMAND(help), CMD_NOT_EXECUTED},
+    {"list", "list [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
+    {"create", "create [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
+    {"remove", "remove [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
+    {"copy", "copy [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
+    {"move", "move [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
+};
+const int NUM_COMMAND_HANDLERS = (sizeof COMMAND_HANDLERS) / (sizeof *COMMAND_HANDLERS);
 
-CommandHandlerT *
-CommandHandler_new(const char *command_name, const char *command_help_msg,
-                   CommandStatusE (*command_handler)(ArgsT args)) {
+CommandHandlerT *CommandHandler_new(const char *command_name, const char *command_help_msg,
+                                    CommandStatusE (*command_handler)(ArgsT args)) {
     CommandHandlerT *self = malloc(sizeof *self);
     strncpy(self->command_name, command_name, MAX_COMMAND_NAME_LENGTH);
     strncpy(self->command_help_msg, command_help_msg, MAX_COMMAND_HELP_MSG_LENGTH);
@@ -23,65 +28,38 @@ CommandHandler_new(const char *command_name, const char *command_help_msg,
     return self;
 }
 
-void
-CommandHandler_copy(CommandHandlerT *self, CommandHandlerT **dest) {
-    *dest = CommandHandler_new(self->command_name, self->command_help_msg,
-                               self->command_handler);
+void CommandHandler_copy(CommandHandlerT *self, CommandHandlerT **dest) {
+    *dest = CommandHandler_new(self->command_name, self->command_help_msg, self->command_handler);
 }
 
-void
-CommandHandler_free(CommandHandlerT *self) {
+void CommandHandler_free(CommandHandlerT *self) {
     free(self->command_name);
     free(self->command_help_msg);
     free(self);
 }
 
-void
-CommandHandler_display_help_msg(CommandHandlerT *self) {
+void CommandHandler_display_help_msg(CommandHandlerT *self) {
     printf("%s: %s\n", self->command_name, self->command_help_msg);
 }
 
 /** Helper function */
-CommandHandlerT *
-get_command_handler_from_name(const char *command_name) {
-    for (size_t i = 0; i < num_command_handler; i++) {
-        if (!strncmp(command_handlers[i]->command_name, command_name,
-                     MAX_COMMAND_NAME_LENGTH)) {
-            return command_handlers[i];
+CommandHandlerT *get_command_handler_from_name(const char *command_name) {
+    for (size_t i = 0; i < NUM_COMMAND_HANDLERS; i++) {
+        if (!strncmp(COMMAND_HANDLERS[i].command_name, command_name, MAX_COMMAND_NAME_LENGTH)) {
+            return &COMMAND_HANDLERS[i];
         }
     }
     return NULL;
 }
 
-void
-__register_command_handler(CommandHandlerT *command_handler) {
-    if (num_command_handler >= MAX_NUM_COMMANDS) {
-        // TODO: handle this.
-        return;
-    }
-    CommandHandler_copy(command_handler, &command_handlers[num_command_handler++]);
-}
-
-void
-__register_commands(size_t num_args, ...) {
-    va_list args;
-    va_start(args, num_args);
-
-    while (num_args--) {
-        __register_command_handler(va_arg(args, CommandHandlerT *));
-    }
-    va_end(args);
-}
-
 /** Commands */
-CommandStatusE
-COMMAND(help)(ArgsT args) {
-    CommandHandlerT *cmd;
+CommandStatusE COMMAND(help)(ArgsT args) {
+    CommandHandlerT *cmd = NULL;
 
     if (!args.num_args) {
         puts("Usage: sftp <cmd_name> [options]");
-        for (size_t i = 0; i < num_command_handler; i++) {
-            cmd = command_handlers[i];
+        for (size_t i = 0; i < MAX_NUM_COMMANDS; i++) {
+            *cmd = COMMAND_HANDLERS[i];
             printf("\t");
             CommandHandler_display_help_msg(cmd);
         }
@@ -100,12 +78,3 @@ CommandStatusE COMMAND(create)(ArgsT args);
 CommandStatusE COMMAND(remove)(ArgsT args);
 CommandStatusE COMMAND(copy)(ArgsT args);
 CommandStatusE COMMAND(move)(ArgsT args);
-
-void
-run() {
-    REGISTER(CommandHandler_new("help", "Prints this help message", COMMAND(help)),
-             CommandHandler_new("list", "list ... TODO", COMMAND(list)),
-             CommandHandler_new("delete", "delete ... TODO", COMMAND(remove)),
-             CommandHandler_new("copy", "copy ... TODO", COMMAND(copy)),
-             CommandHandler_new("move", "move ... TODO", COMMAND(move)));
-}
