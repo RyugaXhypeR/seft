@@ -1,16 +1,20 @@
-#include "sftp_client.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#include "debug.h"
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include "debug.h"
+#include "commands.h"
+#include "sftp_client.h"
 
 /** SSH does not impose any restrictions on the passphrase length,
  * but for simplicity, we will have a finite length passphrase buffer. */
 #define MAX_PASSPHRASE_LEN 128
+
+#define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
 ssh_session
 do_ssh_init(char *host_name, uint8_t port_id) {
@@ -61,13 +65,69 @@ do_sftp_init(ssh_session session_ssh) {
 
     result = sftp_init(session_sftp);
     if (result != SSH_OK) {
-        DBG_ERR("Connection error: %s", ssh_get_error(session_ssh));
+        DBG_ERR("Couldn't initialize SFTP session: Error Code %d",
+                sftp_get_error(session_sftp));
         sftp_free(session_sftp);
         clean_ssh_session(session_ssh);
         exit(EXIT_FAILURE);
     }
 
     return session_sftp;
+}
+
+uint8_t
+sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
+    if (BIT_MATCH(flag, 1) && attr->type == 2) {
+        return attr->name[0] == '.' ? 0 : 1;
+    }
+
+    return attr->name[0] == '.' ? 0 : 1;
+}
+
+CommandStatusE
+print_sftp_list(ssh_session session_ssh, sftp_session session_sftp, char *directory,
+                uint8_t flag) {
+    uint8_t result, to_print;
+    sftp_dir dir;
+    sftp_attributes attr;
+
+    dir = sftp_opendir(session_sftp, directory);
+    if (dir == NULL) {
+        DBG_ERR("Couldn't open directory: %s\n", ssh_get_error(session_ssh));
+        return CMD_INTERNAL_ERROR;
+    }
+
+    if (!BIT_MATCH(flag, 2)) /* not list view */ {
+        for (size_t i = 0; (attr = sftp_readdir(session_sftp, dir)) != NULL;) {
+            to_print = sftp_list_attr_flag_check(attr, flag);
+
+            if (!(i % 3)) puts("");
+
+            if (to_print) {
+                printf("%-25s", attr->name);
+                i++;
+            }
+        }
+    } else /* list view */ {
+        while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
+            if (sftp_list_attr_flag_check(attr, flag)) {
+                printf("%-25s %-10s %zu\n", attr->name, attr->owner, attr->size);
+            }
+        }
+    }
+
+    if (!sftp_dir_eof(dir)) {
+        DBG_ERR("Can't list directory: %s\n", ssh_get_error(session_ssh));
+        return CMD_INTERNAL_ERROR;
+    }
+
+    result = sftp_closedir(dir);
+    if (result != SSH_OK) {
+        DBG_ERR("Can't close this directory: %s\n", ssh_get_error(session_ssh));
+        return CMD_INTERNAL_ERROR;
+    }
+
+    return CMD_OK;
 }
 
 void
