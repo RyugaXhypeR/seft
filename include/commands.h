@@ -9,7 +9,6 @@
 
 #define COMMAND(name) cli_command_##name
 
-
 typedef enum {
     CMD_OK = 0,
     CMD_INVALID_COMMAND,
@@ -24,7 +23,6 @@ typedef struct {
     size_t num_args;
 } ArgsT;
 
-
 typedef struct {
     char command_name[MAX_COMMAND_NAME_LENGTH];
     char *command_help_msg;
@@ -32,7 +30,8 @@ typedef struct {
     CommandStatusE command_status;
 } CommandHandlerT;
 
-CommandHandlerT *CommandHandler_new(const char *command_name, const char *command_help_msg,
+CommandHandlerT *CommandHandler_new(const char *command_name,
+                                    const char *command_help_msg,
                                     CommandStatusE (*command_handler)(ArgsT args));
 void CommandHandler_free(CommandHandlerT *command_handler);
 void CommandHandler_display_help_msg(CommandHandlerT *self);
@@ -48,4 +47,4 @@ CommandStatusE COMMAND(remove)(ArgsT args);
 CommandStatusE COMMAND(copy)(ArgsT args);
 CommandStatusE COMMAND(move)(ArgsT args);
 
-#endif  // !COMMANDS_H
+#endif /* COMMANDS_H */

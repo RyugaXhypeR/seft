@@ -13,4 +13,4 @@ void clean_ssh_session(ssh_session session);
 
 sftp_session do_sftp_init(ssh_session session_ssh);
 
-#endif  // !SFTP_CLIENT_H
+#endif  /* SFTP_CLIENT_H */

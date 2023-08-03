@@ -7,7 +7,8 @@
 #include <string.h>
 
 /** All the commands supported by the program. */
-const char *COMMANDS[MAX_NUM_COMMANDS] = {"help", "list", "create", "remove", "copy", "move"};
+const char *COMMANDS[MAX_NUM_COMMANDS] = {"help",   "list", "create",
+                                          "remove", "copy", "move"};
 static CommandHandlerT COMMAND_HANDLERS[MAX_NUM_COMMANDS] = {
     {"help", "prints this message", COMMAND(help), CMD_NOT_EXECUTED},
     {"list", "list [OPTIONS]...", COMMAND(help), CMD_NOT_EXECUTED},
@@ -18,8 +19,9 @@ static CommandHandlerT COMMAND_HANDLERS[MAX_NUM_COMMANDS] = {
 };
 const int NUM_COMMAND_HANDLERS = (sizeof COMMAND_HANDLERS) / (sizeof *COMMAND_HANDLERS);
 
-CommandHandlerT *CommandHandler_new(const char *command_name, const char *command_help_msg,
-                                    CommandStatusE (*command_handler)(ArgsT args)) {
+CommandHandlerT *
+CommandHandler_new(const char *command_name, const char *command_help_msg,
+                   CommandStatusE (*command_handler)(ArgsT args)) {
     CommandHandlerT *self = malloc(sizeof *self);
     strncpy(self->command_name, command_name, MAX_COMMAND_NAME_LENGTH);
     strncpy(self->command_help_msg, command_help_msg, MAX_COMMAND_HELP_MSG_LENGTH);
@@ -28,24 +30,30 @@ CommandHandlerT *CommandHandler_new(const char *command_name, const char *comman
     return self;
 }
 
-void CommandHandler_copy(CommandHandlerT *self, CommandHandlerT **dest) {
-    *dest = CommandHandler_new(self->command_name, self->command_help_msg, self->command_handler);
+void
+CommandHandler_copy(CommandHandlerT *self, CommandHandlerT **dest) {
+    *dest = CommandHandler_new(self->command_name, self->command_help_msg,
+                               self->command_handler);
 }
 
-void CommandHandler_free(CommandHandlerT *self) {
+void
+CommandHandler_free(CommandHandlerT *self) {
     free(self->command_name);
     free(self->command_help_msg);
     free(self);
 }
 
-void CommandHandler_display_help_msg(CommandHandlerT *self) {
+void
+CommandHandler_display_help_msg(CommandHandlerT *self) {
     printf("%s: %s\n", self->command_name, self->command_help_msg);
 }
 
 /** Helper function */
-CommandHandlerT *get_command_handler_from_name(const char *command_name) {
+CommandHandlerT *
+get_command_handler_from_name(const char *command_name) {
     for (size_t i = 0; i < NUM_COMMAND_HANDLERS; i++) {
-        if (!strncmp(COMMAND_HANDLERS[i].command_name, command_name, MAX_COMMAND_NAME_LENGTH)) {
+        if (!strncmp(COMMAND_HANDLERS[i].command_name, command_name,
+                     MAX_COMMAND_NAME_LENGTH)) {
             return &COMMAND_HANDLERS[i];
         }
     }
@@ -53,7 +61,8 @@ CommandHandlerT *get_command_handler_from_name(const char *command_name) {
 }
 
 /** Commands */
-CommandStatusE COMMAND(help)(ArgsT args) {
+CommandStatusE
+COMMAND(help)(ArgsT args) {
     CommandHandlerT *cmd = malloc(sizeof *cmd);
 
     if (!args.num_args) {

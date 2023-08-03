@@ -29,8 +29,8 @@ enum DBG_LEVELS {
 #define DBG_INFO(prompt, ...) LOG(DBG_LEVEL_INFO, prompt, __VA_ARGS__)
 #define DBG_DEBUG(prompt, ...) LOG(DBG_LEVEL_DEBUG, prompt, __VA_ARGS__)
 
-
-inline char* __dbg_level_to_str(enum DBG_LEVELS level) {
+inline char*
+__dbg_level_to_str(enum DBG_LEVELS level) {
     switch (level) {
         case DBG_LEVEL_DEBUG:
             return "DEBUG";
@@ -41,4 +41,4 @@ inline char* __dbg_level_to_str(enum DBG_LEVELS level) {
     }
 }
 
-#endif  // !DEBUG_H
+#endif /* DEBUG_H */

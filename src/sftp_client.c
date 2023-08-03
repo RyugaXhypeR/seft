@@ -6,8 +6,8 @@
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
 
-#include "debug.h"
 #include "commands.h"
+#include "debug.h"
 #include "sftp_client.h"
 
 /** SSH does not impose any restrictions on the passphrase length,
