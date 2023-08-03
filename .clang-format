@@ -8,3 +8,6 @@ IndentWidth: 4
 TabWidth: 4
 ColumnLimit: 90
 MaxEmptyLinesToKeep: 2
+
+SeparateDefinitionBlocks: Always
+AlwaysBreakAfterDefinitionReturnType: TopLevel
