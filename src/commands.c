@@ -54,10 +54,10 @@ CommandHandlerT *get_command_handler_from_name(const char *command_name) {
 
 /** Commands */
 CommandStatusE COMMAND(help)(ArgsT args) {
-    CommandHandlerT *cmd = NULL;
+    CommandHandlerT *cmd = malloc(sizeof *cmd);
 
     if (!args.num_args) {
-        puts("Usage: sftp <cmd_name> [options]");
+        puts("Usage: sftp <cmd_name> [OPTIONS]");
         for (size_t i = 0; i < MAX_NUM_COMMANDS; i++) {
             *cmd = COMMAND_HANDLERS[i];
             printf("\t");
@@ -66,6 +66,11 @@ CommandStatusE COMMAND(help)(ArgsT args) {
     } else {
         for (size_t i = 0; i < args.num_args; i++) {
             cmd = get_command_handler_from_name(args.args[i]);
+            if (cmd == NULL) {
+                fprintf(stderr, "Invalid argument %s\n", args.args[i]);
+                return CMD_INVALID_ARGS_TYPE;
+            }
+
             CommandHandler_display_help_msg(cmd);
         }
     }
