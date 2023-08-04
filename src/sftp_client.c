@@ -41,7 +41,7 @@ do_ssh_init(char *host_name, uint32_t port_id) {
     }
 
     ssh_getpass("Enter passphrase: ", passphrase, MAX_PASSPHRASE_LEN, 0, 0);
-    result = ssh_userauth_publickey_auto(session, NULL, passphrase);
+    result = ssh_userauth_password(session, NULL, passphrase);
     if (result != SSH_AUTH_SUCCESS) {
         DBG_ERR("Authentication error: %s", ssh_get_error(session));
         clean_ssh_session(session);
