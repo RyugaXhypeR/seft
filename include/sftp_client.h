@@ -11,6 +11,7 @@
 /** SSH FUNCTIONS */
 ssh_session do_ssh_init(char *host_name, uint32_t port_id);
 void clean_ssh_session(ssh_session session);
+void clean_sftp_session(sftp_session session);
 
 sftp_session do_sftp_init(ssh_session session_ssh);
 CommandStatusE list_sftp_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
