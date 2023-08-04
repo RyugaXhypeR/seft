@@ -138,6 +138,7 @@ list_sftp_dir(ssh_session session_ssh, sftp_session session_sftp, char *director
         DBG_ERR("Can't list directory: %s\n", ssh_get_error(session_ssh));
         return CMD_INTERNAL_ERROR;
     }
+    puts("");
 
     result = sftp_closedir(dir);
     if (result != SSH_OK) {
