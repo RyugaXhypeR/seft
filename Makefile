@@ -11,11 +11,14 @@ AF_SRC = $(CF_SRC:%.c=$(D_MK)/%.a)
 D_INC_INSTALL = /usr/local/include
 D_LIB_INSTALL = /usr/local/lib
 
-OPT_LEVEL = 3
-
 # If defined i.e D=DEBUG will display debug.
 D = NDEBUG
-C_FLAGS = -Wall -Wextra -g -O$(OPT_LEVEL) -D$(D) -fPIE -I$(D_SRC) -I$(D_INC) -lssh -Wno-stringop-truncation
+LINK_FLAGS = -lssh
+INC_FLAGS = -I$(D_SRC) -I$(D_INC)
+OPT_FLAG = -O3
+IGNORE_FLAGS = -Wno-stringop-truncation
+LINTER_FLAGS = -Wall -Wextra -Wpedantic
+C_FLAGS = $(LINTER_FLAGS) $(IGNORE_FLAGS) -g $(OPT_FLAG) $(INC_FLAGS) $(LINK_FLAGS)
 
 .PHONY: all clean
 
