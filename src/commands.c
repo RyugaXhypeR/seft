@@ -1,10 +1,11 @@
-#include "commands.h"
-
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "commands.h"
+
 
 /** All the commands supported by the program. */
 const char *COMMANDS[MAX_NUM_COMMANDS] = {"help",   "list", "create",
@@ -38,8 +39,6 @@ CommandHandler_copy(CommandHandlerT *self, CommandHandlerT **dest) {
 
 void
 CommandHandler_free(CommandHandlerT *self) {
-    free(self->command_name);
-    free(self->command_help_msg);
     free(self);
 }
 

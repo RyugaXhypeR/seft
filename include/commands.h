@@ -24,8 +24,8 @@ typedef struct {
 } ArgsT;
 
 typedef struct {
-    char command_name[MAX_COMMAND_NAME_LENGTH];
-    char *command_help_msg;
+    char command_name[MAX_COMMAND_NAME_LENGTH + 1];
+    char command_help_msg[MAX_COMMAND_HELP_MSG_LENGTH + 1];
     CommandStatusE (*command_handler)(ArgsT args);
     CommandStatusE command_status;
 } CommandHandlerT;
