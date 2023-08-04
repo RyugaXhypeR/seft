@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
@@ -73,6 +76,14 @@ do_sftp_init(ssh_session session_ssh) {
     }
 
     return session_sftp;
+}
+
+static uint32_t
+__get_window_coulmn_length() {
+    struct winsize ws;
+
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
+    return ws.ws_col;
 }
 
 uint8_t
