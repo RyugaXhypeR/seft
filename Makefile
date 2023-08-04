@@ -2,14 +2,11 @@ D_MK = .target
 D_SRC = src
 D_INC = include
 
-# For initial test runs
-CF_TARGET = main.c
-EF_TARGET = $(D_MK)/main
-
 CF_SRC = $(wildcard $(D_SRC)/*.c)
 HF_INC = $(wildcard $(D_INC)/*.h)
 OF_SRC = $(CF_SRC:%.c=$(D_MK)/%.o)
-OF_ALL = $(OF_SRC) $(D_MK)/main.o
+OF_ALL = $(OF_SRC)
+AF_SRC = $(CF_SRC:%.c=$(D_MK)/%.a)
 
 D_INC_INSTALL = /usr/local/include
 D_LIB_INSTALL = /usr/local/lib
@@ -24,17 +21,22 @@ C_FLAGS = -Wall -Wextra -g -O$(OPT_LEVEL) -D$(D) -fPIE -I$(D_SRC) -I$(D_INC) -ls
 
 -include $(DF_SRC)
 
-all: $(EF_TARGET)
+all: $(AF_SRC)
 
-$(EF_TARGET): $(OF_ALL)
-	$(CC) $(C_FLAGS) -o $@ $^
+# Compile the library into a static library.
+$(AF_SRC): $(OF_SRC)
+	@mkdir -p $(@D)
+	ar rcs $@ $^
+	ranlib $@
 
 $(D_MK)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) -c $(C_FLAGS) -o $@ $<
 
-run: $(EF_TARGET)
-	@$<
+install: $(AF_SRC)
+	mkdir -p $(D_INC_INSTALL) $(D_LIB_INSTALL)
+	cp $(D_INC)/* $(D_INC_INSTALL)
+	cp $^ $(D_LIB_INSTALL)
 
 clean:
 	$(RM) -r $(D_MK)
