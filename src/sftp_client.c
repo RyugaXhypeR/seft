@@ -103,11 +103,12 @@ sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
 }
 
 CommandStatusE
-print_sftp_list(ssh_session session_ssh, sftp_session session_sftp, char *directory,
+list_sftp_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
                 uint8_t flag) {
-    uint8_t result, to_print;
+    uint8_t result;
     sftp_dir dir;
     sftp_attributes attr;
+    uint8_t num_files_on_line = __get_window_coulmn_length() / 25;
 
     dir = sftp_opendir(session_sftp, directory);
     if (dir == NULL) {
@@ -116,14 +117,13 @@ print_sftp_list(ssh_session session_ssh, sftp_session session_sftp, char *direct
     }
 
     if (!BIT_MATCH(flag, 2)) /* not list view */ {
-        for (size_t i = 0; (attr = sftp_readdir(session_sftp, dir)) != NULL;) {
-            to_print = sftp_list_attr_flag_check(attr, flag);
-
-            if (!(i % 3)) puts("");
-
-            if (to_print) {
+        for (size_t i = 1; (attr = sftp_readdir(session_sftp, dir)) != NULL;) {
+            if (sftp_list_attr_flag_check(attr, flag)) {
                 printf("%-25s", attr->name);
-                i++;
+
+                if (!(i++ % num_files_on_line)) {
+                    puts("");
+                }
             }
         }
     } else /* list view */ {
