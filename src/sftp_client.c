@@ -17,7 +17,7 @@
 #define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
 ssh_session
-do_ssh_init(char *host_name, uint8_t port_id) {
+do_ssh_init(char *host_name, uint32_t port_id) {
     uint8_t result;
     ssh_session session;
     char passphrase[MAX_PASSPHRASE_LEN] = {0};
