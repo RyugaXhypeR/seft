@@ -18,7 +18,7 @@ OPT_LEVEL = 3
 
 # If defined i.e D=DEBUG will display debug.
 D = NDEBUG
-C_FLAGS = -Wall -Wextra -g -O$(OPT_LEVEL) -D$(D) -fPIE -I$(D_SRC) -I$(D_INC) -lssh
+C_FLAGS = -Wall -Wextra -g -O$(OPT_LEVEL) -D$(D) -fPIE -I$(D_SRC) -I$(D_INC) -lssh -Wno-stringop-truncation
 
 .PHONY: all clean
 
