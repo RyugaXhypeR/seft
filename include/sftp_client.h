@@ -8,7 +8,7 @@
 
 
 /** SSH FUNCTIONS */
-ssh_session do_ssh_init(char *host_name, uint8_t port_id);
+ssh_session do_ssh_init(char *host_name, uint32_t port_id);
 void clean_ssh_session(ssh_session session);
 
 sftp_session do_sftp_init(ssh_session session_ssh);
