@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -13,9 +14,17 @@
 #include "debug.h"
 #include "sftp_client.h"
 
+#ifdef WIN32
+#define PATH_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR '/'
+#endif
+
 /** SSH does not impose any restrictions on the passphrase length,
  * but for simplicity, we will have a finite length passphrase buffer. */
-#define MAX_PASSPHRASE_LEN 128
+#define BUF_SIZE_PASSPHRASE 128
+
+#define BUF_SIZE_FS_PATH 1024
 
 #define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
@@ -23,7 +32,7 @@ ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
     uint8_t result;
     ssh_session session;
-    char passphrase[MAX_PASSPHRASE_LEN] = {0};
+    char passphrase[BUF_SIZE_PASSPHRASE] = {0};
 
     ssh_init();
 
@@ -43,7 +52,7 @@ do_ssh_init(char *host_name, uint32_t port_id) {
         exit(EXIT_FAILURE);
     }
 
-    ssh_getpass("Enter passphrase: ", passphrase, MAX_PASSPHRASE_LEN, 0, 0);
+    ssh_getpass("Enter passphrase: ", passphrase, BUF_SIZE_PASSPHRASE, 0, 0);
     result = ssh_userauth_password(session, NULL, passphrase);
     if (result != SSH_AUTH_SUCCESS) {
         DBG_ERR("Authentication error: %s", ssh_get_error(session));
@@ -79,7 +88,7 @@ do_sftp_init(ssh_session session_ssh) {
 }
 
 static uint32_t
-__get_window_coulmn_length() {
+__get_window_column_length() {
     struct winsize ws;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
@@ -103,12 +112,12 @@ sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
 }
 
 CommandStatusE
-list_sftp_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
+list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
                 uint8_t flag) {
     uint8_t result;
     sftp_dir dir;
     sftp_attributes attr;
-    uint8_t num_files_on_line = __get_window_coulmn_length() / 25;
+    uint8_t num_files_on_line = __get_window_column_length() / 25;
 
     dir = sftp_opendir(session_sftp, directory);
     if (dir == NULL) {
@@ -149,12 +158,58 @@ list_sftp_dir(ssh_session session_ssh, sftp_session session_sftp, char *director
     return CMD_OK;
 }
 
+CommandStatusE
+create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
+                   char *current_working_directory, char *filename) {
+    char abs_file_path[BUF_SIZE_FS_PATH];
+    sftp_file file;
+
+    snprintf(abs_file_path, BUF_SIZE_FS_PATH, "%s%c%s", current_working_directory,
+             PATH_SEPARATOR, filename);
+
+    file = sftp_open(session_sftp, abs_file_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+    if (file == NULL) {
+        DBG_ERR("Couldn't create file %s in %s: %s", filename, current_working_directory,
+                ssh_get_error(session_ssh));
+        sftp_close(file);
+        return CMD_INTERNAL_ERROR;
+    }
+
+    sftp_close(file);
+    return CMD_OK;
+}
+
+CommandStatusE
+create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
+                  char *current_working_directory, char *dirname) {
+    uint8_t result;
+    char abs_dir_path[BUF_SIZE_FS_PATH];
+    snprintf(abs_dir_path, BUF_SIZE_FS_PATH, "%s%c%s", current_working_directory,
+             PATH_SEPARATOR, dirname);
+
+    result = sftp_mkdir(session_sftp, abs_dir_path, O_RDWR);
+    if (result != SSH_OK) {
+        DBG_ERR("Couldn't create directory: %s", ssh_get_error(session_ssh));
+        return CMD_INTERNAL_ERROR;
+    }
+
+    return CMD_OK;
+}
+
 void
 clean_ssh_session(ssh_session session) {
     DBG_DEBUG("Freeing session: %p", session);
+
     if (ssh_is_connected(session)) {
         ssh_disconnect(session);
     }
     ssh_free(session);
     ssh_finalize();
+}
+
+void
+clean_sftp_session(sftp_session session) {
+    DBG_DEBUG("Freeing session: %p", session);
+
+    sftp_free(session);
 }
