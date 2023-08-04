@@ -17,7 +17,7 @@ sftp_session do_sftp_init(ssh_session session_ssh);
 CommandStatusE list_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                                char *directory, uint8_t flag);
 CommandStatusE create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
-                                  char *current_working_directory, char *filename);
+                                  char *abs_file_path);
 CommandStatusE create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
-                                 char *current_working_directory, char *dirname);
+                                 char *abs_dir_path);
 #endif /* SFTP_CLIENT_H */

@@ -88,7 +88,7 @@ do_sftp_init(ssh_session session_ssh) {
 }
 
 static uint32_t
-__get_window_column_length() {
+_get_window_column_length() {
     struct winsize ws;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
@@ -117,7 +117,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     uint8_t result;
     sftp_dir dir;
     sftp_attributes attr;
-    uint8_t num_files_on_line = __get_window_column_length() / 25;
+    uint8_t num_files_on_line = _get_window_column_length() / 25;
 
     dir = sftp_opendir(session_sftp, directory);
     if (dir == NULL) {
@@ -160,17 +160,11 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
 
 CommandStatusE
 create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
-                   char *current_working_directory, char *filename) {
-    char abs_file_path[BUF_SIZE_FS_PATH];
-    sftp_file file;
-
-    snprintf(abs_file_path, BUF_SIZE_FS_PATH, "%s%c%s", current_working_directory,
-             PATH_SEPARATOR, filename);
-
-    file = sftp_open(session_sftp, abs_file_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+                   char *abs_file_path) {
+    sftp_file file =
+        sftp_open(session_sftp, abs_file_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (file == NULL) {
-        DBG_ERR("Couldn't create file %s in %s: %s", filename, current_working_directory,
-                ssh_get_error(session_ssh));
+        DBG_ERR("Couldn't create file %s: %s", abs_file_path, ssh_get_error(session_ssh));
         sftp_close(file);
         return CMD_INTERNAL_ERROR;
     }
@@ -181,13 +175,8 @@ create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
 
 CommandStatusE
 create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
-                  char *current_working_directory, char *dirname) {
-    uint8_t result;
-    char abs_dir_path[BUF_SIZE_FS_PATH];
-    snprintf(abs_dir_path, BUF_SIZE_FS_PATH, "%s%c%s", current_working_directory,
-             PATH_SEPARATOR, dirname);
-
-    result = sftp_mkdir(session_sftp, abs_dir_path, O_RDWR);
+                  char *abs_dir_path) {
+    uint8_t result = sftp_mkdir(session_sftp, abs_dir_path, O_RDWR);
     if (result != SSH_OK) {
         DBG_ERR("Couldn't create directory: %s", ssh_get_error(session_ssh));
         return CMD_INTERNAL_ERROR;
