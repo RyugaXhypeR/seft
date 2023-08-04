@@ -95,8 +95,8 @@ uint8_t
 sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
     uint8_t is_valid = sftp_list_attr_check_show_hidden(attr, flag);
 
-    if (BIT_MATCH(flag, 1) && attr->type == 2 && is_valid) {
-        is_valid = 1;
+    if (BIT_MATCH(flag, 1)) {
+        return attr->type == 2 && is_valid;
     }
 
     return is_valid;
