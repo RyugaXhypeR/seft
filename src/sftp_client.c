@@ -14,11 +14,6 @@
 #include "debug.h"
 #include "sftp_client.h"
 
-#ifdef WIN32
-#define PATH_SEPARATOR '\\'
-#else
-#define PATH_SEPARATOR '/'
-#endif
 
 /** SSH does not impose any restrictions on the passphrase length,
  * but for simplicity, we will have a finite length passphrase buffer. */
