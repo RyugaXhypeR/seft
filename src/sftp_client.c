@@ -187,7 +187,7 @@ create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
 
 void
 clean_ssh_session(ssh_session session) {
-    DBG_DEBUG("Freeing session: %p", session);
+    DBG_DEBUG("Freeing session: %p", (void *)session);
 
     if (ssh_is_connected(session)) {
         ssh_disconnect(session);
@@ -198,7 +198,7 @@ clean_ssh_session(ssh_session session) {
 
 void
 clean_sftp_session(sftp_session session) {
-    DBG_DEBUG("Freeing session: %p", session);
+    DBG_DEBUG("Freeing session: %p", (void *)session);
 
     sftp_free(session);
 }
