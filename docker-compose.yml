@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  sftp:
+    image: atmoz/sftp
+    ports:
+      - "2222:22"
+    volumes:
+      - /tmp:/home/sftp_host/upload
+    command: sftp_host:sftp:1001
+
