@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <sys/stat.h>
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
