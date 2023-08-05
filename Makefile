@@ -8,6 +8,10 @@ OF_SRC = $(CF_SRC:%.c=$(D_MK)/%.o)
 DF_SRC = $(OF_SRC:%.o=%.d)
 OF_ALL = $(OF_SRC)
 AF_SRC = $(CF_SRC:%.c=$(D_MK)/%.a)
+CF_SRC_NO_DIR = $(notdir $(CF_SRC))
+HF_INC_NO_DIR = $(notdir $(HF_INC))
+HF_INST = $(HF_INC_NO_DIR:%.h=$(D_INC_INSTALL)/%.h)
+AF_INST = $(CF_SRC_NO_DIR:%.c=$(D_LIB_INSTALL)/%.a)
 
 D_INC_INSTALL = /usr/local/include
 D_LIB_INSTALL = /usr/local/lib
