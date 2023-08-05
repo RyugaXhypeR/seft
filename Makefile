@@ -48,6 +48,8 @@ install: $(AF_SRC)
 
 run:
 	$(CC) -L./.target/src/commands.a ./.target/src/sftp_client.a -Isrc -Iinclude main.c -o $(D_MK)/main && $(D_MK)/main
+uninstall:
+	$(RM) $(HF_INST) $(AF_INST)
 
 clean:
 	$(RM) -r $(D_MK)
