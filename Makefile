@@ -5,6 +5,7 @@ D_INC = include
 CF_SRC = $(wildcard $(D_SRC)/*.c)
 HF_INC = $(wildcard $(D_INC)/*.h)
 OF_SRC = $(CF_SRC:%.c=$(D_MK)/%.o)
+DF_SRC = $(OF_SRC:%.o=%.d)
 OF_ALL = $(OF_SRC)
 AF_SRC = $(CF_SRC:%.c=$(D_MK)/%.a)
 
@@ -22,8 +23,6 @@ C_FLAGS = $(LINTER_FLAGS) $(IGNORE_FLAGS) -g $(OPT_FLAG) $(INC_FLAGS) $(LINK_FLA
 
 .PHONY: all clean
 
--include $(DF_SRC)
-
 all: $(AF_SRC)
 
 # Compile the library into a static library.
@@ -40,6 +39,11 @@ install: $(AF_SRC)
 	mkdir -p $(D_INC_INSTALL) $(D_LIB_INSTALL)
 	cp $(D_INC)/* $(D_INC_INSTALL)
 	cp $^ $(D_LIB_INSTALL)
+
+-include $(DF_SRC)
+
+run:
+	$(CC) -L./.target/src/commands.a ./.target/src/sftp_client.a -Isrc -Iinclude main.c -o $(D_MK)/main && $(D_MK)/main
 
 clean:
 	$(RM) -r $(D_MK)
