@@ -23,7 +23,7 @@ INC_FLAGS = -I$(D_SRC) -I$(D_INC)
 OPT_FLAG = -O3
 IGNORE_FLAGS = -Wno-stringop-truncation
 LINTER_FLAGS = -Wall -Wextra -Wpedantic
-C_FLAGS = $(LINTER_FLAGS) $(IGNORE_FLAGS) -g $(OPT_FLAG) $(INC_FLAGS) $(LINK_FLAGS)
+C_FLAGS = $(LINTER_FLAGS) $(IGNORE_FLAGS) -g $(OPT_FLAG) $(INC_FLAGS) $(LINK_FLAGS) -D=$(D)
 
 .PHONY: all clean
 
