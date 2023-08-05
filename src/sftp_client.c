@@ -28,7 +28,7 @@
 
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
-    uint8_t result;
+    int8_t result;
     ssh_session session;
     char passphrase[BUF_SIZE_PASSPHRASE] = {0};
 
@@ -63,7 +63,7 @@ do_ssh_init(char *host_name, uint32_t port_id) {
 
 sftp_session
 do_sftp_init(ssh_session session_ssh) {
-    uint8_t result;
+    int8_t result;
     sftp_session session_sftp;
 
     session_sftp = sftp_new(session_ssh);
@@ -112,7 +112,7 @@ sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
 CommandStatusE
 list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
                 uint8_t flag) {
-    uint8_t result;
+    int8_t result;
     sftp_dir dir;
     sftp_attributes attr;
     uint8_t num_files_on_line = _get_window_column_length() / 25;
