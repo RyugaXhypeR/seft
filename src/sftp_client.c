@@ -86,24 +86,24 @@ do_sftp_init(ssh_session session_ssh) {
 }
 
 static uint32_t
-_get_window_column_length() {
+_get_window_column_length(void) {
     struct winsize ws;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
     return ws.ws_col;
 }
 
-uint8_t
+static uint8_t
 sftp_list_attr_check_show_hidden(sftp_attributes attr, uint8_t flag) {
     return BIT_MATCH(flag, 0) ? 1 : attr->name[0] != '.';
 }
 
-uint8_t
+static uint8_t
 sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
     uint8_t is_valid = sftp_list_attr_check_show_hidden(attr, flag);
 
     if (BIT_MATCH(flag, 1)) {
-        return attr->type == 2 && is_valid;
+        return S_ISDIR(attr->type) && is_valid;
     }
 
     return is_valid;
@@ -164,7 +164,6 @@ create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
 
     if (file == NULL) {
         DBG_ERR("Couldn't create file %s: %s", abs_file_path, ssh_get_error(session_ssh));
-        sftp_close(file);
         return CMD_INTERNAL_ERROR;
     }
 
