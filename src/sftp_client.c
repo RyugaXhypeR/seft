@@ -100,7 +100,7 @@ sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
     uint8_t is_valid = sftp_list_attr_check_show_hidden(attr, flag);
 
     if (BIT_MATCH(flag, 1)) {
-        return S_ISDIR(attr->type) && is_valid;
+        return attr->type == SSH_FILEXFER_TYPE_DIRECTORY && is_valid;
     }
 
     return is_valid;
