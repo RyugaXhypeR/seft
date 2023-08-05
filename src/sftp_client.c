@@ -23,6 +23,9 @@
 
 #define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
+/* File owner has perms to Read, Write and Execute the rest can only Read and Execute */
+#define FS_CREATE_PERM S_IRWXU | S_IRWXG | S_IRWXO
+
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
     uint8_t result;
@@ -157,7 +160,8 @@ CommandStatusE
 create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
                    char *abs_file_path) {
     sftp_file file =
-        sftp_open(session_sftp, abs_file_path, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+        sftp_open(session_sftp, abs_file_path, O_CREAT | O_WRONLY, FS_CREATE_PERM);
+
     if (file == NULL) {
         DBG_ERR("Couldn't create file %s: %s", abs_file_path, ssh_get_error(session_ssh));
         sftp_close(file);
@@ -171,7 +175,8 @@ create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
 CommandStatusE
 create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                   char *abs_dir_path) {
-    uint8_t result = sftp_mkdir(session_sftp, abs_dir_path, O_RDWR);
+    int8_t result = sftp_mkdir(session_sftp, abs_dir_path, FS_CREATE_PERM);
+
     if (result != SSH_OK) {
         DBG_ERR("Couldn't create directory: %s", ssh_get_error(session_ssh));
         return CMD_INTERNAL_ERROR;
