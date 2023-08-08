@@ -5,16 +5,16 @@
 #include "attr_list.h"
 #include "debug.h"
 
-AttrListT *
-AttrList_new(size_t length) {
-    AttrListT *self = malloc(sizeof *self);
-    sftp_attributes *dirs = malloc(length * (sizeof *dirs));
-    *self = (AttrListT){.dirs = dirs, .length = 0, .allocated = length};
+ListT *
+List_new(size_t length, size_t type_size) {
+    ListT *self = malloc(sizeof *self);
+    void **list = malloc(length * type_size);
+    *self = (ListT){.list = list, .length = 0, .allocated = length};
     return self;
 }
 
 void
-AttrList_re_alloc(AttrListT *self, size_t new_size) {
+List_re_alloc(ListT *self, size_t new_size) {
     if (self->allocated >= new_size) {
         return;
     }
@@ -29,11 +29,10 @@ AttrList_re_alloc(AttrListT *self, size_t new_size) {
      *      https://github.com/python/cpython/blob/main/Objects/listobject.c#L62-#L72 */
     new_size = (new_size + (new_size >> 3) + 6) & ~(size_t)3;
 
-    self->dirs = realloc(self->dirs, new_size);
-    if (self->dirs == NULL) {
-        DBG_ERR(
-            "Couldn't reallocate memory for `AttrListT.dirs`, tried to allocate %zu size",
-            new_size);
+    self->list = realloc(self->list, new_size * sizeof *self->list);
+    if (self->list == NULL) {
+        DBG_ERR("Couldn't reallocate memory for `ListT.dirs`, tried to allocate %zu size",
+                new_size);
         return;
     }
 
@@ -41,26 +40,26 @@ AttrList_re_alloc(AttrListT *self, size_t new_size) {
 }
 
 void
-AttrList_push(AttrListT *self, sftp_attributes attr) {
-    AttrList_re_alloc(self, self->length + 1);
-    self->dirs[self->length++] = attr;
+List_push(ListT *self, void *attr) {
+    List_re_alloc(self, self->length + 1);
+    self->list[self->length++] = attr;
 }
 
-sftp_attributes
-AttrList_pop(AttrListT *self) {
-    if (!AttrList_is_empty(self)) {
-        return self->dirs[--self->length];
+void *
+List_pop(ListT *self) {
+    if (!List_is_empty(self)) {
+        return self->list[--self->length];
     }
     return NULL;
 }
 
 bool
-AttrList_is_empty(AttrListT *self) {
+List_is_empty(ListT *self) {
     return !self->length;
 }
 
 void
-AttrList_free(AttrListT *self) {
-    free(self->dirs);
+List_free(ListT *self) {
+    free(self->list);
     free(self);
 }

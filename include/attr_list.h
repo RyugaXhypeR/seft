@@ -11,19 +11,19 @@ typedef struct {
      * .. note::
      *
      *    The type of the attribute should always be ``SSH_FILEXFER_TYPE_DIRECTORY`` */
-    sftp_attributes *dirs;
+    void **list;
 
     /** Length of the array */
     size_t length;
 
     /** Size allocated for the array */
     size_t allocated;
-} AttrListT;
+} ListT;
 
-AttrListT *AttrList_new(size_t length);
-void AttrList_push(AttrListT *self, sftp_attributes attr);
-sftp_attributes AttrList_pop(AttrListT *self);
-bool AttrList_is_empty(AttrListT *self);
-void AttrList_free(AttrListT *self);
+ListT *List_new(size_t length, size_t type_size);
+void List_push(ListT *self, void *attr);
+void *List_pop(ListT *self);
+bool List_is_empty(ListT *self);
+void List_free(ListT *self);
 
 #endif
