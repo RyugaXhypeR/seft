@@ -46,12 +46,21 @@ AttrList_push(AttrListT *self, sftp_attributes attr) {
     self->dirs[self->length++] = attr;
 }
 
+sftp_attributes
+AttrList_pop(AttrListT *self) {
+    if (!AttrList_is_empty(self)) {
+        return self->dirs[--self->length];
+    }
+    return NULL;
+}
+
 bool
 AttrList_is_empty(AttrListT *self) {
     return !self->length;
 }
 
-void AttrList_free(AttrListT *self) {
+void
+AttrList_free(AttrListT *self) {
     free(self->dirs);
     free(self);
 }
