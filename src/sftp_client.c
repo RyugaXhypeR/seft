@@ -174,12 +174,19 @@ create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                   char *abs_dir_path) {
     int8_t result = sftp_mkdir(session_sftp, abs_dir_path, FS_CREATE_PERM);
 
-    if (result != SSH_OK) {
-        DBG_ERR("Couldn't create directory: %s", ssh_get_error(session_ssh));
-        return CMD_INTERNAL_ERROR;
+    switch (result) {
+        case SSH_FX_OK:
+            return CMD_OK;
+        case SSH_FX_FILE_ALREADY_EXISTS:
+            DBG_INFO("Directory %s already exists", abs_dir_path);
+            return CMD_OK;
+        case SSH_FX_PERMISSION_DENIED:
+            DBG_ERR("Permission Denied: directory %s could not be created", abs_dir_path);
+            return CMD_INTERNAL_ERROR;
+        default:
+            DBG_ERR("Error: %s\n", ssh_get_error(session_ssh));
+            return CMD_INTERNAL_ERROR;
     }
-
-    return CMD_OK;
 }
 
 static CommandStatusE
