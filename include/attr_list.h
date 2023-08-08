@@ -22,6 +22,7 @@ typedef struct {
 
 AttrListT *AttrList_new(size_t length);
 void AttrList_push(AttrListT *self, sftp_attributes attr);
+sftp_attributes AttrList_pop(AttrListT *self);
 bool AttrList_is_empty(AttrListT *self);
 void AttrList_free(AttrListT *self);
 
