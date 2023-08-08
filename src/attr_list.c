@@ -9,7 +9,7 @@ AttrListT *
 AttrList_new(size_t length) {
     AttrListT *self = malloc(sizeof *self);
     sftp_attributes *dirs = malloc(length * (sizeof *dirs));
-    *self = (AttrListT){.dirs = dirs, .length = length, .allocated = length};
+    *self = (AttrListT){.dirs = dirs, .length = 0, .allocated = length};
     return self;
 }
 
