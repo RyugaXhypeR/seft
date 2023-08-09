@@ -1,5 +1,5 @@
-#ifndef ATTR_LIST_H
-#define ATTR_LIST_H
+#ifndef SFTP_LIST_H
+#define SFTP_LIST_H
 
 #include <stdbool.h>
 
@@ -26,4 +26,4 @@ void *List_pop(ListT *self);
 bool List_is_empty(ListT *self);
 void List_free(ListT *self);
 
-#endif
+#endif /* SFTP_LIST_H */

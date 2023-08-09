@@ -2,7 +2,7 @@
 
 #include <libssh/sftp.h>
 
-#include "attr_list.h"
+#include "sftp_list.h"
 #include "debug.h"
 
 ListT *
