@@ -1,12 +1,16 @@
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
 
+#include "sftp_list.h"
 #include "commands.h"
 #include "debug.h"
 #include "sftp_client.h"
@@ -16,13 +20,36 @@
  * but for simplicity, we will have a finite length passphrase buffer. */
 #define BUF_SIZE_PASSPHRASE 128
 
-#define BUF_SIZE_FS_PATH 1024
+#define BUF_SIZE_FS_NAME 128
+#define BUF_SIZE_FS_PATH 2048
 #define BUF_SIZE_FILE_CONTENTS 65536
 
 #define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
 /* File owner has perms to Read, Write and Execute the rest can only Read and Execute */
 #define FS_CREATE_PERM S_IRWXU | S_IRWXG | S_IRWXO
+
+#define __NUM_ARGS(type, ...) (sizeof((type []){__VA_ARGS__}) / sizeof(type))
+#define FS_JOIN_PATH(...) __fs_path_join(__NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
+
+char *
+__fs_path_join(size_t num_paths, ...) {
+    va_list args;
+    size_t path_len = 0;
+    char *path_buf = malloc(BUF_SIZE_FS_PATH * (sizeof *path_buf));
+    char *path_name = malloc(BUF_SIZE_FS_NAME * (sizeof *path_buf));
+
+    va_start(args, num_paths);
+    for (size_t i = 0; i < num_paths; i++) {
+        path_name = va_arg(args, char *);
+        path_len += strlen(path_name);
+        strncat(path_buf, path_name, path_len);
+        strncat(path_buf, "/", 1);
+    }
+    va_end(args);
+
+    return path_buf;
+}
 
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
