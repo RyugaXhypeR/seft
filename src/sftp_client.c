@@ -251,30 +251,38 @@ _copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sf
 static CommandStatusE
 _copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                       char *abs_path_remote, char *abs_path_local) {
+    ListT *dir_path_list = List_new(2, sizeof(char *));
+    char *abs_dir_path = ".";
     sftp_attributes attr;
-    sftp_dir from_dir = sftp_opendir(session_sftp, abs_path_remote);
+    sftp_dir from_dir;
 
-    if (from_dir == NULL) {
-        DBG_ERR("Couldn't open directory: %s\n", ssh_get_error(session_ssh));
-        return CMD_INTERNAL_ERROR;
-    }
+    List_push(dir_path_list, abs_path_remote);
+    while (!List_is_empty(dir_path_list)) {
+        abs_dir_path = FS_JOIN_PATH(abs_dir_path, List_pop(dir_path_list));
+        from_dir = sftp_opendir(session_sftp, abs_dir_path);
 
-    while ((attr = sftp_readdir(session_sftp, from_dir)) != NULL) {
-        switch (attr->type) {
-            case SSH_FILEXFER_TYPE_REGULAR:
-                _copy_file_from_remote_to_local(session_ssh, session_sftp, attr->name,
-                                            abs_path_local);
-                break;
-            case SSH_FILEXFER_TYPE_DIRECTORY:
-                /* Make this a non recursive function */
-                _copy_dir_recursively(session_ssh, session_sftp, attr->name, abs_path_local);
-                break;
-            default:
-                DBG_DEBUG("Ignoring type: %d", attr->type);
+        if (from_dir == NULL) {
+            DBG_ERR("Couldn't open directory: %s\n", ssh_get_error(session_ssh));
+            return CMD_INTERNAL_ERROR;
         }
+
+        while ((attr = sftp_readdir(session_sftp, from_dir)) != NULL) {
+            printf("attrname: %s\n", attr->name);
+            switch (attr->type) {
+                case SSH_FILEXFER_TYPE_REGULAR:
+                    _copy_file_from_remote_to_local(session_ssh, session_sftp, attr->name,
+                                                    abs_path_local);
+                    break;
+                case SSH_FILEXFER_TYPE_DIRECTORY:
+                    /* TODO */
+                    break;
+                default:
+                    DBG_DEBUG("Ignoring type: %d", attr->type);
+            }
+        }
+        sftp_closedir(from_dir);
     }
 
-    sftp_closedir(from_dir);
     return CMD_OK;
 }
 
