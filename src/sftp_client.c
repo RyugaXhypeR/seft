@@ -173,7 +173,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     puts("");
 
     result = sftp_closedir(dir);
-    if (result != SSH_OK) {
+    if (result != SSH_FX_OK) {
         DBG_ERR("Can't close this directory: %s\n", ssh_get_error(session_ssh));
         return CMD_INTERNAL_ERROR;
     }
@@ -234,7 +234,8 @@ _copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sf
         return CMD_INTERNAL_ERROR;
     }
 
-    while ((num_bytes_read = sftp_read(from_file, file_buf, BUF_SIZE_FILE_CONTENTS)) > 0) {
+    while ((num_bytes_read = sftp_read(from_file, file_buf, BUF_SIZE_FILE_CONTENTS)) >
+           0) {
         fwrite(file_buf, sizeof *file_buf, num_bytes_read, to_file);
     }
 
