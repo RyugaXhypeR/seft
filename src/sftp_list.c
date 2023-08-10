@@ -58,6 +58,15 @@ List_is_empty(ListT *self) {
     return !self->length;
 }
 
+void *
+List_get(ListT *self, size_t index) {
+    if (index >= self->length) {
+        return NULL;
+    }
+
+    return self->list[index];
+}
+
 void
 List_free(ListT *self) {
     free(self->list);
