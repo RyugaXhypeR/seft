@@ -6,7 +6,6 @@ CF_SRC = $(wildcard $(D_SRC)/*.c)
 HF_INC = $(wildcard $(D_INC)/*.h)
 OF_SRC = $(CF_SRC:%.c=$(D_MK)/%.o)
 DF_SRC = $(OF_SRC:%.o=%.d)
-OF_ALL = $(OF_SRC)
 AF_SRC = $(CF_SRC:%.c=$(D_MK)/%.a)
 CF_SRC_NO_DIR = $(notdir $(CF_SRC))
 HF_INC_NO_DIR = $(notdir $(HF_INC))
@@ -46,8 +45,14 @@ install: $(AF_SRC)
 
 -include $(DF_SRC)
 
-run:
-	$(CC) -L./.target/src/commands.a ./.target/src/sftp_client.a -Isrc -Iinclude main.c -o $(D_MK)/main && $(D_MK)/main
+$(D_MK)/%.so: %.c
+	@mkdir -p $(@D)
+	$(CC) $(C_FLAGS) -fPIC -shared -o $@ $<
+
+run: main.c
+	# $(CC) -L/usr/local/lib/ -I/usr/local/include main.c -l:sftp_client.a -lssh -o $(D_MK)/main && $(D_MK)/main
+	$(CC) -Isrc/ -Iinclude/ main.c -lssh -o $(D_MK)/main $(CF_SRC) && $(D_MK)/main
+
 uninstall:
 	$(RM) $(HF_INST) $(AF_INST)
 
