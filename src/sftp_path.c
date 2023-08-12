@@ -180,9 +180,13 @@ path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent)
 }
 
 uint8_t
-path_mkdir_parents(char *path_str, size_t _length) {
-    /* TODO: implement the function, avoid the system-call */
+path_mkdir_parents(char *path_str, size_t length) {
     char *path_buf = malloc(BUF_SIZE_FS_PATH * sizeof *path_buf);
+
+    if (length < 1) {
+        return 0;
+    }
+    /* TODO: implement the function, avoid the system-call */
     snprintf(path_buf, BUF_SIZE_FS_PATH, "mkdir -p %s", path_str);
     system(path_buf);
     return 1;
@@ -212,7 +216,7 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     sftp_attributes attr;
     FileTypesT file_system_type;
     char *attr_relative_path;
-    ListT *path_content_list = List_new(1, sizeof(DirectoryT *));
+    ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
 
     dir = sftp_opendir(session_sftp, path);
     if (dir == NULL) {
