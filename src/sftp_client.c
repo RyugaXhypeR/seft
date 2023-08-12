@@ -113,7 +113,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     int8_t result;
     sftp_dir dir;
     sftp_attributes attr;
-    uint8_t num_files_on_line = _get_window_column_length() / 25;
+    uint8_t num_files_on_line = get_window_column_length() / 25;
 
     dir = sftp_opendir(session_sftp, directory);
     if (dir == NULL) {
