@@ -21,7 +21,20 @@
 #define PATH_SEPARATOR '/'
 #endif
 
-char *path_str_slice(char *path_str, size_t start, size_t stop);
+typedef enum {
+    FS_REG_FILE = 1,
+    FS_DIRECTORY = 2,
+    FS_SYM_LINK = 3,
+} FileTypesT;
+
+typedef struct {
+    char *name;
+    char *absoulte_path;
+    char *grand_parent_path;
+    char *parent_path;
+    char *relative_path;
+    FileTypesT type;
+} FileSystemT;
 char *path_remove_prefix(char *path_str, size_t length);
 char *path_remove_suffix(char *path_str, size_t length);
 char *path_join(size_t num_paths, ...);
