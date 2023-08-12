@@ -22,7 +22,7 @@
 #define BIT_MATCH(bits, pos) (bits & (1 << pos))
 
 /* File owner has perms to Read, Write and Execute the rest can only Read and Execute */
-#define FS_CREATE_PERM S_IRWXU | S_IRWXG | S_IRWXO
+#define FS_CREATE_PERM (S_IRWXU | S_IRWXG | S_IRWXO)
 
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
