@@ -1,11 +1,13 @@
-#include <stdint.h>
+#include <libssh/sftp.h>
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
+#include "commands.h"
+#include "debug.h"
 #include "sftp_list.h"
 #include "sftp_path.h"
 
@@ -48,7 +50,7 @@ path_remove_prefix(char *path_str, size_t length) {
     }
 
     for (size_t i = 0; i < length; i++) {
-        /* Break as soon as the first non path seperator is found. */
+        /* Break as soon as the first non path separator is found. */
         if (cleaned_path_str[i] != PATH_SEPARATOR) {
             break;
         }
@@ -73,7 +75,7 @@ path_remove_suffix(char *path_str, size_t length) {
         return cleaned_path_str;
     }
 
-    for (ssize_t i = length - 1; i > -1; i++) {
+    for (ssize_t i = (ssize_t)length - 1; i > -1; i++) {
         if (cleaned_path_str[i] != PATH_SEPARATOR) {
             break;
         }
@@ -92,8 +94,8 @@ path_join(size_t num_paths, ...) {
     va_list args;
     size_t fs_len = 0;
     size_t path_len = 0;
-    char *path_buf = malloc(BUF_SIZE_FS_PATH * (sizeof *path_buf));
-    char *fs_name = malloc(BUF_SIZE_FS_NAME * (sizeof *path_buf));
+    char *path_buf = calloc(BUF_SIZE_FS_PATH, (sizeof *path_buf));
+    char *fs_name;
 
     va_start(args, num_paths);
     for (size_t i = 0; i < num_paths && path_len < BUF_SIZE_FS_PATH; i++) {
@@ -115,8 +117,15 @@ path_join(size_t num_paths, ...) {
     return path_buf;
 }
 
+void
+path_buf_clear(char *path_buf, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        path_buf[i] = '\0';
+    }
+}
+
 ListT *
-path_split(char *path_str, size_t length) {
+path_split(const char *path_str, size_t length) {
     ListT *path_list = List_new(0, sizeof(char *));
     char *path_buf = malloc(BUF_SIZE_FS_NAME * sizeof *path_buf);
     size_t path_buf_len = 0;
@@ -128,6 +137,7 @@ path_split(char *path_str, size_t length) {
         }
         path_buf[path_buf_len] = '\0';
         List_push(path_list, path_buf);
+        path_buf_clear(path_buf, BUF_SIZE_FS_NAME);
         path_buf_len = 0;
     }
     List_push(path_list, path_buf);
@@ -135,26 +145,98 @@ path_split(char *path_str, size_t length) {
     return path_list;
 }
 
-uint8_t
-path_mkdir_parents(char *path_str, size_t length) {
-    puts(path_str);
-    struct stat _dir_stats;
-    char *path_buf = malloc(BUF_SIZE_FS_NAME * sizeof *path_buf);
-    ListT *path_list = path_split(path_str, length);
-    path_buf = List_get(path_list, 0);
+bool
+path_is_dotted(const char *path_str, size_t length) {
+    if (length > 2) {
+        return false;
+    }
+    return !strcmp(path_str, ".") || !strcmp(path_str, "..");
+}
 
-    for (size_t i = 0; i < path_list->length; i++) {
-        if (i) {
-            path_buf = FS_JOIN_PATH(path_buf, List_get(path_list, i));
-        }
+char *
+path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent) {
+    size_t slash_index = 0;
+    char *replaced_head = path_str;
 
-        if (stat(path_buf, &_dir_stats) == -1) {
-            if (!mkdir(path_buf, 0700)) {
-                perror("mkdir");
-            }
+    if (length_str < 3) {
+        return false;
+    }
+
+    for (; slash_index < length_str; slash_index++) {
+        if (path_str[slash_index] == PATH_SEPARATOR) {
+            break;
         }
     }
 
-    List_free(path_list);
+    if (slash_index == length_str) {
+        return replaced_head;
+    }
+
+    replaced_head = path_str_slice(replaced_head, slash_index + 1, length_str);
+    replaced_head = FS_JOIN_PATH(grand_parent, replaced_head);
+    puts(replaced_head);
+
+    return replaced_head;
+}
+
+uint8_t
+path_mkdir_parents(char *path_str, size_t _length) {
+    /* TODO: implement the function, avoid the system-call */
+    char *path_buf = malloc(BUF_SIZE_FS_PATH * sizeof *path_buf);
+    snprintf(path_buf, BUF_SIZE_FS_PATH, "mkdir -p %s", path_str);
+    system(path_buf);
     return 1;
+}
+
+FileSystemT *
+FileSystem_from_path(char *path, uint8_t type) {
+    FileSystemT *file_system = malloc(sizeof *file_system);
+    ListT *split;
+    file_system->type = type;
+
+    if (*path == PATH_SEPARATOR) {
+        file_system->absoulte_path = path;
+    } else {
+        file_system->relative_path = path;
+    }
+
+    split = path_split(path, strlen(path));
+    file_system->name = List_pop(split);
+
+    return file_system;
+}
+
+ListT *
+path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *path) {
+    sftp_dir dir;
+    sftp_attributes attr;
+    FileTypesT file_system_type;
+    char *attr_relative_path;
+    ListT *path_content_list = List_new(1, sizeof(DirectoryT *));
+
+    dir = sftp_opendir(session_sftp, path);
+    if (dir == NULL) {
+        DBG_ERR("Couldn't open remote directory `%s`: %s\n", path,
+                ssh_get_error(session_ssh));
+        return NULL;
+    }
+
+    while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
+        attr_relative_path = FS_JOIN_PATH(path, attr->name);
+
+        switch (attr->type) {
+            case SSH_FILEXFER_TYPE_REGULAR:
+                file_system_type = FS_REG_FILE;
+                break;
+            case SSH_FILEXFER_TYPE_DIRECTORY:
+                file_system_type = FS_DIRECTORY;
+                break;
+            default:
+                DBG_INFO("Ignoring filetype %d\n", attr->type);
+        }
+        List_push(path_content_list,
+                  FileSystem_from_path(attr_relative_path, file_system_type));
+    }
+
+    return path_content_list;
 }
