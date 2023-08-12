@@ -190,8 +190,8 @@ create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
 }
 
 static CommandStatusE
-_copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
-                                char *abs_path_remote, char *abs_path_local) {
+copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
+                               char *abs_path_remote, char *abs_path_local) {
     int32_t num_bytes_read;
     char file_buf[BUF_SIZE_FILE_CONTENTS + 1];
     sftp_file from_file = sftp_open(session_sftp, abs_path_remote, O_RDONLY, 0);
@@ -222,39 +222,55 @@ _copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sf
 }
 
 static CommandStatusE
-_copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
-                      char *abs_path_remote, char *abs_path_local) {
-    ListT *dir_path_list = List_new(2, sizeof(char *));
-    char *abs_dir_path = ".";
-    sftp_attributes attr;
-    sftp_dir from_dir;
+copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
+                     char *abs_path_remote, char *abs_path_local) {
+    ListT *sub_dir_path_stack = List_new(1, sizeof(char *));
+    ListT *remote_dir;
+    FileSystemT *file_system;
+    char *dir_path_remote = NULL;
+    char *dir_path_local = NULL;
+    sftp_dir dir;
 
-    List_push(dir_path_list, abs_path_remote);
-    while (!List_is_empty(dir_path_list)) {
-        abs_dir_path = FS_JOIN_PATH(abs_dir_path, List_pop(dir_path_list));
-        from_dir = sftp_opendir(session_sftp, abs_dir_path);
+    do {
+        if (dir_path_remote == NULL || dir_path_local == NULL) {
+            dir_path_remote = abs_path_remote;
+            dir_path_local = abs_path_local;
+        } else {
+            dir_path_remote = List_pop(sub_dir_path_stack);
+            dir_path_local = path_replace_grand_parent(dir_path_remote, strlen(dir_path_remote), abs_path_local);
+        }
 
-        if (from_dir == NULL) {
-            DBG_ERR("Couldn't open directory: %s\n", ssh_get_error(session_ssh));
+        printf("mkdir: %s\n", dir_path_local);
+        path_mkdir_parents(dir_path_local, strlen(dir_path_local));
+        remote_dir = path_read_remote_dir(session_ssh, session_sftp, dir_path_remote);
+        if (remote_dir == NULL) {
             return CMD_INTERNAL_ERROR;
         }
 
-        while ((attr = sftp_readdir(session_sftp, from_dir)) != NULL) {
-            printf("attrname: %s\n", attr->name);
-            switch (attr->type) {
-                case SSH_FILEXFER_TYPE_REGULAR:
-                    _copy_file_from_remote_to_local(session_ssh, session_sftp, attr->name,
-                                                    abs_path_local);
+        for (size_t i = 0; i < remote_dir->length; i++) {
+            file_system = List_get(remote_dir, i);
+
+            switch (file_system->type) {
+                case FS_REG_FILE:
+                    copy_from_remote_to_local(
+                        session_ssh, session_sftp, file_system->relative_path,
+                        path_replace_grand_parent(file_system->relative_path,
+                                                  strlen(file_system->relative_path),
+                                                  abs_path_local));
                     break;
-                case SSH_FILEXFER_TYPE_DIRECTORY:
-                    /* TODO */
+                case FS_DIRECTORY:
+                    if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
+                        List_push(sub_dir_path_stack, file_system->relative_path);
+                    }
                     break;
+                case FS_SYM_LINK:
+                    break; /* TODO */
                 default:
-                    DBG_DEBUG("Ignoring type: %d", attr->type);
+                    DBG_ERR("Unknown type %d", file_system->type);
             }
         }
-        sftp_closedir(from_dir);
-    }
+
+    } while (!List_is_empty(sub_dir_path_stack));
 
     return CMD_OK;
 }
@@ -271,12 +287,12 @@ copy_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
 
     if (from->type == SSH_FILEXFER_TYPE_DIRECTORY) {
         DBG_DEBUG("Copying dir from %s to %s", abs_path_remote, abs_path_local);
-        return _copy_dir_recursively(session_ssh, session_sftp, abs_path_remote,
-                                     abs_path_local);
+        return copy_dir_recursively(session_ssh, session_sftp, abs_path_remote,
+                                    abs_path_local);
     } else if (from->type == SSH_FILEXFER_TYPE_REGULAR) {
         DBG_DEBUG("Copying file from %s to %s", abs_path_remote, abs_path_local);
-        return _copy_file_from_remote_to_local(session_ssh, session_sftp, abs_path_remote,
-                                               abs_path_local);
+        return copy_file_from_remote_to_local(session_ssh, session_sftp, abs_path_remote,
+                                              abs_path_local);
     }
 
     return CMD_OK;
