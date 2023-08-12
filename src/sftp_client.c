@@ -84,11 +84,11 @@ do_sftp_init(ssh_session session_ssh) {
 }
 
 static uint32_t
-_get_window_column_length(void) {
-    struct winsize ws;
+get_window_column_length(void) {
+    struct winsize window_size;
 
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-    return ws.ws_col;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &window_size);
+    return window_size.ws_col;
 }
 
 static uint8_t
