@@ -17,6 +17,7 @@
 
 /* Simple macro to count the number of arguments in ``__VA_ARGS__`` */
 #define __NUM_ARGS(type, ...) (sizeof((type[]){__VA_ARGS__}) / sizeof(type))
+
 #define FS_JOIN_PATH(...) path_join(__NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
 
 #ifdef WIN32
