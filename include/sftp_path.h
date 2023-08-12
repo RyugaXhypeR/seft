@@ -12,6 +12,10 @@
 #define BUF_SIZE_FS_NAME 128
 #define BUF_SIZE_FS_PATH 2048
 
+/* File owner has perms to Read, Write and Execute the rest can only Read and Execute */
+#define FS_CREATE_PERM (S_IRWXU | S_IRWXG | S_IRWXO)
+
+/* Simple macro to count the number of arguments in ``__VA_ARGS__`` */
 #define __NUM_ARGS(type, ...) (sizeof((type[]){__VA_ARGS__}) / sizeof(type))
 #define FS_JOIN_PATH(...) path_join(__NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
 
