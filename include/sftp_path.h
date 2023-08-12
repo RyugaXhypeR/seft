@@ -39,10 +39,17 @@ typedef struct {
     char *relative_path;
     FileTypesT type;
 } FileSystemT;
+
+char *path_str_slice(const char *path_str, size_t start, size_t stop);
 char *path_remove_prefix(char *path_str, size_t length);
 char *path_remove_suffix(char *path_str, size_t length);
 char *path_join(size_t num_paths, ...);
+bool path_is_dotted(const char *path_str, size_t length);
 uint8_t path_mkdir_parents(char *path_str, size_t length);
-ListT *path_split(char *path_str, size_t length);
+ListT *path_split(const char *path_str, size_t length);
+char *path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent);
+ListT *path_read_local_dir(char *dir_path);
+ListT *path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
+                            char *dir_path);
 
 #endif /* ifndef SFTP_PATH_H */
