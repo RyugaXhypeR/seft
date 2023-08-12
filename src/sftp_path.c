@@ -10,7 +10,7 @@
 #include "sftp_path.h"
 
 char *
-path_str_slice(char *path_str, size_t start, size_t stop) {
+path_str_slice(const char *path_str, size_t start, size_t stop) {
     size_t length = stop - start;
     char *sliced_path_str;
 
