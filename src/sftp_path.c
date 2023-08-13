@@ -20,7 +20,7 @@ path_str_slice(const char *path_str, size_t start, size_t stop) {
         return NULL;
     }
 
-    sliced_path_str = malloc(length * sizeof *sliced_path_str);
+    sliced_path_str = calloc(length, sizeof *sliced_path_str);
     for (size_t i = start; i < stop; i++) {
         sliced_path_str[i - start] = path_str[i];
     }
