@@ -1,10 +1,13 @@
-#include <libssh/sftp.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <libssh/libssh.h>
+#include <libssh/sftp.h>
 
 #include "commands.h"
 #include "debug.h"
@@ -213,6 +216,7 @@ FileSystem_from_path(char *path, uint8_t type) {
 ListT *
 path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *path) {
     sftp_dir dir;
+    uint8_t result;
     sftp_attributes attr;
     FileTypesT file_system_type;
     char *attr_relative_path;
@@ -240,6 +244,13 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
         }
         List_push(path_content_list,
                   FileSystem_from_path(attr_relative_path, file_system_type));
+    }
+
+    result = sftp_closedir(dir);
+    if (result != SSH_FX_OK) {
+        DBG_ERR("Couldn't close directory %s: %s\n", dir->name,
+                ssh_get_error(session_ssh));
+        return NULL;
     }
 
     return path_content_list;
