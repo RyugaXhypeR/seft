@@ -139,11 +139,11 @@ path_split(const char *path_str, size_t length) {
             continue;
         }
         path_buf[path_buf_len] = '\0';
-        List_push(path_list, path_buf);
+        List_push(path_list, path_buf, path_buf_len);
         path_buf_clear(path_buf, BUF_SIZE_FS_NAME);
         path_buf_len = 0;
     }
-    List_push(path_list, path_buf);
+    List_push(path_list, path_buf, path_buf_len);
 
     return path_list;
 }
@@ -219,6 +219,7 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     uint8_t result;
     sftp_attributes attr;
     FileTypesT file_system_type;
+    FileSystemT *file_system;
     char *attr_relative_path;
     ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
 
@@ -242,8 +243,8 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
             default:
                 DBG_INFO("Ignoring filetype %d\n", attr->type);
         }
-        List_push(path_content_list,
-                  FileSystem_from_path(attr_relative_path, file_system_type));
+        file_system = FileSystem_from_path(attr_relative_path, file_system_type);
+        List_push(path_content_list, file_system, sizeof *file_system);
     }
 
     result = sftp_closedir(dir);

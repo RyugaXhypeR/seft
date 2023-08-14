@@ -74,3 +74,25 @@ List_free(ListT *self) {
     free(self->list);
     free(self);
 }
+
+ListT *
+List_slice(ListT *self, size_t start, size_t stop) {
+    size_t length = stop - start;
+    ListT *sliced_list;
+
+    if (length < 1) {
+        return NULL;
+    }
+    
+    if (stop > self->length) {
+        stop = self->length;
+    }
+
+    sliced_list = List_new(1, sizeof(void *));
+    for (size_t i = start; i < stop; i++) {
+        puts(self->list[i]);
+        List_push(sliced_list, self->list[i], sizeof self->list[i]);
+    }
+
+    return sliced_list;
+}
