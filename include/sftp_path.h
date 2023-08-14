@@ -9,6 +9,10 @@
 #define BUF_SIZE_FS_PATH 2048
 #define BUF_SIZE_FILE_CONTENTS 65536
 
+/** SSH does not impose any restrictions on the passphrase length,
+ * but for simplicity, we will have a finite length passphrase buffer. */
+#define BUF_SIZE_PASSPHRASE 128
+
 #define BUF_SIZE_FS_NAME 128
 #define BUF_SIZE_FS_PATH 2048
 
