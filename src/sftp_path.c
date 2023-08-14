@@ -144,6 +144,7 @@ path_split(const char *path_str, size_t length) {
         path_buf_len = 0;
     }
     List_push(path_list, path_buf, path_buf_len);
+    free(path_buf);
 
     return path_list;
 }
@@ -213,6 +214,16 @@ FileSystem_from_path(char *path, uint8_t type) {
     return file_system;
 }
 
+void
+FileSystem_free(FileSystemT *self) {
+    free(self->name);
+    free(self->absoulte_path);
+    free(self->relative_path);
+    free(self->grand_parent_path);
+    free(self->parent_path);
+    free(self);
+}
+
 ListT *
 path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *path) {
     sftp_dir dir;
@@ -253,6 +264,9 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
                 ssh_get_error(session_ssh));
         return NULL;
     }
+    FileSystem_free(file_system);
+    free(attr_relative_path);
+    sftp_attributes_free(attr);
 
     return path_content_list;
 }
