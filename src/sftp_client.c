@@ -13,16 +13,7 @@
 #include "sftp_client.h"
 #include "sftp_list.h"
 #include "sftp_path.h"
-
-
-/** SSH does not impose any restrictions on the passphrase length,
- * but for simplicity, we will have a finite length passphrase buffer. */
-#define BUF_SIZE_PASSPHRASE 128
-
-#define BIT_MATCH(bits, pos) (bits & (1 << pos))
-
-/* File owner has perms to Read, Write and Execute the rest can only Read and Execute */
-#define FS_CREATE_PERM (S_IRWXU | S_IRWXG | S_IRWXO)
+#include "sftp_utils.h"
 
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
@@ -81,14 +72,6 @@ do_sftp_init(ssh_session session_ssh) {
     }
 
     return session_sftp;
-}
-
-static uint32_t
-get_window_column_length(void) {
-    struct winsize window_size;
-
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &window_size);
-    return window_size.ws_col;
 }
 
 static uint8_t
