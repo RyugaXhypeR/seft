@@ -178,21 +178,35 @@ path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent)
 
     replaced_head = path_str_slice(replaced_head, slash_index + 1, length_str);
     replaced_head = FS_JOIN_PATH(grand_parent, replaced_head);
-    puts(replaced_head);
 
     return replaced_head;
 }
 
 uint8_t
 path_mkdir_parents(char *path_str, size_t length) {
-    char *path_buf = malloc(BUF_SIZE_FS_PATH * sizeof *path_buf);
+    struct stat _dir_stats;
+    int8_t result;
+    char *path_buf = malloc(BUF_SIZE_FS_NAME * sizeof *path_buf);
+    ListT *path_list = path_split(path_str, length);
+    path_buf = List_get(path_list, 0);
 
-    if (length < 1) {
-        return 0;
+    for (size_t i = 0; i < path_list->length; i++) {
+        if (i) {
+            path_buf = FS_JOIN_PATH(path_buf, List_get(path_list, i));
+        }
+
+        if (stat(path_buf, &_dir_stats) == -1) {
+            /* Directory does not exist */
+
+            if ((result = mkdir(path_buf, FS_CREATE_PERM))) {
+                DBG_ERR("Couldn't create directory %s: Error code: %d\n", path_buf,
+                        result);
+                return 0;
+            }
+        }
     }
-    /* TODO: implement the function, avoid the system-call */
-    snprintf(path_buf, BUF_SIZE_FS_PATH, "mkdir -p %s", path_str);
-    system(path_buf);
+
+    List_free(path_list);
     return 1;
 }
 
