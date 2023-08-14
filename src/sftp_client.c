@@ -220,7 +220,8 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
             dir_path_local = abs_path_local;
         } else {
             dir_path_remote = List_pop(sub_dir_path_stack);
-            dir_path_local = path_replace_grand_parent(dir_path_remote, strlen(dir_path_remote), abs_path_local);
+            dir_path_local = path_replace_grand_parent(
+                dir_path_remote, strlen(dir_path_remote), abs_path_local);
         }
 
         printf("mkdir: %s\n", dir_path_local);
@@ -243,7 +244,9 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                     break;
                 case FS_DIRECTORY:
                     if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
-                        List_push(sub_dir_path_stack, file_system->relative_path);
+                        List_push(sub_dir_path_stack, file_system->relative_path,
+                                  (sizeof *file_system->relative_path) *
+                                      (strlen(file_system->relative_path) + 1));
                     }
                     break;
                 case FS_SYM_LINK:
