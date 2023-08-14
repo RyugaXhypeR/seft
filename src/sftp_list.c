@@ -1,6 +1,7 @@
 #include <stdlib.h>
 
 #include <libssh/sftp.h>
+#include <string.h>
 
 #include "sftp_list.h"
 #include "debug.h"
@@ -40,9 +41,10 @@ List_re_alloc(ListT *self, size_t new_size) {
 }
 
 void
-List_push(ListT *self, void *attr) {
+List_push(ListT *self, void *other, size_t size) {
     List_re_alloc(self, self->length + 1);
-    self->list[self->length++] = attr;
+    self->list[self->length] = malloc(size);
+    memcpy(self->list[self->length++], other, size);
 }
 
 void *
