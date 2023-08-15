@@ -110,7 +110,7 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
     size_t len_rows, start, stop, len_max, len_buf_widths, len_col_widths = 0;
     uint32_t col_widths[MAX_COLS] = {0};
     uint32_t buf_widths[MAX_COLS] = {0};
-    ListT *slice, *rows, *row;
+    ListT *slice, *rows = NULL, *row = NULL;
 
     len_max = char_list_max_len(self);
 
@@ -153,6 +153,12 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
         putchar('\n');
     }
 
-    List_free(row);
-    List_free(rows);
+    if (row != NULL) {
+        List_free(row);
+    }
+    if (rows != NULL) {
+        List_free(rows);
+    }
+}
+
 }
