@@ -40,10 +40,10 @@ u32_array_copy(uint32_t *dest, size_t *len_dest, const uint32_t *src, size_t len
     *len_dest = len_src;
 }
 
-uint32_t
+size_t
 char_list_max_len(ListT *self) {
-    uint32_t len;
-    uint32_t len_max = 0;
+    size_t len;
+    size_t len_max = 0;
 
     for (size_t i = 0; i < self->length; i++) {
         len = strlen(List_get(self, i));
