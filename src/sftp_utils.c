@@ -116,7 +116,7 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
 
     if ((len_max + len_delimiter) * self->length < width_screen) {
         for (size_t i = 0; i < self->length; i++) {
-            printf("%-*s%s", len_max, ((char *)List_get(self, i)), delimiter);
+            printf("%s%s", ((char *)List_get(self, i)), delimiter);
         }
         putchar('\n');
         return;
