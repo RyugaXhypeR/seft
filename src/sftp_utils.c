@@ -161,4 +161,18 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
     }
 }
 
+bool
+check_show_hidden(char *path_str, size_t length, uint8_t flag) {
+    return BIT_MATCH(flag, 0) ? 1 : !path_is_hidden(path_str, length);
+}
+
+bool
+check_path_type(char *path_str, size_t length, bool is_dir, uint8_t flag) {
+    uint8_t is_valid = check_show_hidden(path_str, length, flag);
+
+    if (BIT_MATCH(flag, 1)) {
+        return is_dir && is_valid;
+    }
+
+    return is_valid;
 }
