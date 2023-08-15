@@ -139,11 +139,11 @@ path_split(const char *path_str, size_t length) {
             continue;
         }
         path_buf[path_buf_len] = '\0';
-        List_push(path_list, path_buf, path_buf_len);
+        List_push(path_list, path_buf, path_buf_len + 1);
         path_buf_clear(path_buf, BUF_SIZE_FS_NAME);
         path_buf_len = 0;
     }
-    List_push(path_list, path_buf, path_buf_len);
+    List_push(path_list, path_buf, path_buf_len + 1);
     free(path_buf);
 
     return path_list;
@@ -158,7 +158,7 @@ path_is_dotted(const char *path_str, size_t length) {
 }
 
 char *
-path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent) {
+path_replace_grandparent(char *path_str, size_t length_str, char *grandparent) {
     size_t slash_index = 0;
     char *replaced_head = path_str;
 
@@ -177,7 +177,7 @@ path_replace_grand_parent(char *path_str, size_t length_str, char *grand_parent)
     }
 
     replaced_head = path_str_slice(replaced_head, slash_index + 1, length_str);
-    replaced_head = FS_JOIN_PATH(grand_parent, replaced_head);
+    replaced_head = FS_JOIN_PATH(grandparent, replaced_head);
 
     return replaced_head;
 }
@@ -214,16 +214,24 @@ FileSystemT *
 FileSystem_from_path(char *path, uint8_t type) {
     FileSystemT *file_system = malloc(sizeof *file_system);
     ListT *split;
-    file_system->type = type;
+
+    *file_system = (FileSystemT){
+        .name = malloc(BUF_SIZE_FS_NAME),
+        .relative_path = malloc(BUF_SIZE_FS_PATH),
+        .absoulte_path = malloc(BUF_SIZE_FS_PATH),
+        .grandparent_path = malloc(BUF_SIZE_FS_PATH),
+        .parent_path = malloc(BUF_SIZE_FS_PATH),
+        .type = type,
+    };
 
     if (*path == PATH_SEPARATOR) {
-        file_system->absoulte_path = path;
+        strcpy(file_system->absoulte_path, path);
     } else {
-        file_system->relative_path = path;
+        strcpy(file_system->relative_path, path);
     }
 
     split = path_split(path, strlen(path));
-    file_system->name = List_pop(split);
+    strcpy(file_system->name, List_pop(split));
 
     return file_system;
 }
@@ -233,9 +241,22 @@ FileSystem_free(FileSystemT *self) {
     free(self->name);
     free(self->absoulte_path);
     free(self->relative_path);
-    free(self->grand_parent_path);
+    free(self->grandparent_path);
     free(self->parent_path);
     free(self);
+}
+
+void
+FileSystem_copy(FileSystemT *self, FileSystemT *dest) {
+    strcpy(dest->name, self->name);
+    strcpy(dest->relative_path, self->relative_path);
+}
+
+void
+FileSystem_list_push(ListT *self, FileSystemT *fs) {
+    List_re_alloc(self, self->length + 1);
+    self->list[self->length] = FileSystem_from_path(fs->relative_path, fs->type);
+    FileSystem_copy(fs, self->list[self->length++]);
 }
 
 ListT *
@@ -269,8 +290,14 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
                 DBG_INFO("Ignoring filetype %d\n", attr->type);
         }
         file_system = FileSystem_from_path(attr_relative_path, file_system_type);
-        List_push(path_content_list, file_system, sizeof *file_system);
+        FileSystem_list_push(path_content_list, file_system);
     }
+
+    // for (size_t i = 0; i < path_content_list->length; i++) {
+    //     // printf("Fileconents: name: %s, relpath: %s\n", 
+    //     //        ((FileSystemT *)List_get(path_content_list, i))->name, ((FileSystemT *)List_get(path_content_list, i))->relative_path);
+    //
+    // }
 
     result = sftp_closedir(dir);
     if (result != SSH_FX_OK) {
@@ -278,9 +305,6 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
                 ssh_get_error(session_ssh));
         return NULL;
     }
-    FileSystem_free(file_system);
-    free(attr_relative_path);
-    sftp_attributes_free(attr);
 
     return path_content_list;
 }
