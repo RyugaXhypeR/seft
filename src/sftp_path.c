@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -155,6 +156,15 @@ path_is_dotted(const char *path_str, size_t length) {
         return false;
     }
     return !strcmp(path_str, ".") || !strcmp(path_str, "..");
+}
+
+bool
+path_is_hidden(const char *path_str, size_t length) {
+    if (!length) {
+        return false;
+    }
+
+    return *path_str == '.';
 }
 
 char *
