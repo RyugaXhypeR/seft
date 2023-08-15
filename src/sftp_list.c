@@ -90,9 +90,14 @@ List_slice(ListT *self, size_t start, size_t stop) {
 
     sliced_list = List_new(1, sizeof(void *));
     for (size_t i = start; i < stop; i++) {
-        puts(self->list[i]);
-        List_push(sliced_list, self->list[i], sizeof self->list[i]);
+        List_push(sliced_list, self->list[i], sizeof(void *));
     }
 
     return sliced_list;
+}
+
+void List_copy_inplace(ListT *self, ListT *dest, size_t size) {
+    for (size_t i = 0; i < self->length; i++) {
+        List_push(dest, List_get(self, i), size);
+    }
 }
