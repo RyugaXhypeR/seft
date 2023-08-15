@@ -82,17 +82,19 @@ char_list_equalized_slice(ListT *self, size_t len_rows, size_t len_cols) {
     ListT *rows = List_new(1, sizeof *rows);
     ListT *row, *slice;
     size_t start, stop;
+    char *list_item;
 
     for (size_t i = 0; i < len_rows; i++) {
-        row = List_new(1, sizeof *row);
+        row = List_new(1, sizeof(char));
 
         for (size_t j = 0; j < len_cols; j++) {
             start = len_rows * j;
             stop = len_rows * (j + 1);
 
             slice = char_list_slice(self, start, stop);
+            list_item = List_get(slice, i);
             if (i < slice->length) {
-                List_push(row, List_get(slice, i), (sizeof *slice));
+                List_push(row, list_item, strlen(list_item) + 1);
             }
         }
         List_push(rows, row, (sizeof *row));
