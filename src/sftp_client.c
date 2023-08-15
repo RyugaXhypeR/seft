@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,29 +75,16 @@ do_sftp_init(ssh_session session_ssh) {
     return session_sftp;
 }
 
-static uint8_t
-sftp_list_attr_check_show_hidden(sftp_attributes attr, uint8_t flag) {
-    return BIT_MATCH(flag, 0) ? 1 : attr->name[0] != '.';
-}
-
-static uint8_t
-sftp_list_attr_flag_check(sftp_attributes attr, uint8_t flag) {
-    uint8_t is_valid = sftp_list_attr_check_show_hidden(attr, flag);
-
-    if (BIT_MATCH(flag, 1)) {
-        return attr->type == SSH_FILEXFER_TYPE_DIRECTORY && is_valid;
-    }
-
-    return is_valid;
-}
-
 CommandStatusE
 list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
                 uint8_t flag) {
-    int8_t result;
     sftp_dir dir;
     sftp_attributes attr;
-    uint8_t num_files_on_line = get_window_column_length() / 25;
+    FileSystemT *fs;
+    ListT *dir_contents;
+    ListT *formatted_contents = List_new(1, sizeof(char *));
+    char *filename = malloc(BUF_SIZE_FS_NAME);
+    size_t width_screen = get_window_column_length();
 
     dir = sftp_opendir(session_sftp, directory);
     if (dir == NULL) {
@@ -104,35 +92,32 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
         return CMD_INTERNAL_ERROR;
     }
 
-    if (!BIT_MATCH(flag, 2)) /* not list view */ {
-        for (size_t i = 1; (attr = sftp_readdir(session_sftp, dir)) != NULL;) {
-            if (sftp_list_attr_flag_check(attr, flag)) {
-                printf("%-25s", attr->name);
-
-                if (!(i++ % num_files_on_line)) {
-                    puts("");
-                }
-            }
-        }
-    } else /* list view */ {
+    if (BIT_MATCH(flag, 2)) /* list view */ {
         while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
-            if (sftp_list_attr_flag_check(attr, flag)) {
+            if (check_path_type(attr->name, strlen(attr->name),
+                                attr->type == SSH_FILEXFER_TYPE_DIRECTORY, flag)) {
                 printf("%-25s %-10s %zu\n", attr->name, attr->owner, attr->size);
             }
         }
+        return CMD_OK;
     }
 
-    if (!sftp_dir_eof(dir)) {
-        DBG_ERR("Can't list directory: %s\n", ssh_get_error(session_ssh));
-        return CMD_INTERNAL_ERROR;
-    }
-    puts("");
+    sftp_closedir(dir);
 
-    result = sftp_closedir(dir);
-    if (result != SSH_FX_OK) {
-        DBG_ERR("Can't close this directory: %s\n", ssh_get_error(session_ssh));
-        return CMD_INTERNAL_ERROR;
+    dir_contents = path_read_remote_dir(session_ssh, session_sftp, directory);
+    for (size_t i = 0; i < dir_contents->length; i++) {
+        fs = List_get(dir_contents, i);
+        if (fs->type == FS_DIRECTORY) {
+            sprintf(filename, " %s", fs->name);
+        } else {
+            sprintf(filename, " %s", fs->name);
+        }
+        if (check_path_type(filename, strlen(filename), fs->type == FS_DIRECTORY, flag)) {
+            List_push(formatted_contents, filename, strlen(filename) + 1);
+        }
     }
+    char_list_format_columnwise(formatted_contents, width_screen, "    ");
+
 
     return CMD_OK;
 }
@@ -212,7 +197,6 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
     FileSystemT *file_system;
     char *dir_path_remote = NULL;
     char *dir_path_local = NULL;
-    sftp_dir dir;
 
     do {
         if (dir_path_remote == NULL || dir_path_local == NULL) {
@@ -220,11 +204,10 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
             dir_path_local = abs_path_local;
         } else {
             dir_path_remote = List_pop(sub_dir_path_stack);
-            dir_path_local = path_replace_grand_parent(
+            dir_path_local = path_replace_grandparent(
                 dir_path_remote, strlen(dir_path_remote), abs_path_local);
         }
 
-        printf("mkdir: %s\n", dir_path_local);
         path_mkdir_parents(dir_path_local, strlen(dir_path_local));
         remote_dir = path_read_remote_dir(session_ssh, session_sftp, dir_path_remote);
         if (remote_dir == NULL) {
@@ -238,9 +221,9 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                 case FS_REG_FILE:
                     copy_from_remote_to_local(
                         session_ssh, session_sftp, file_system->relative_path,
-                        path_replace_grand_parent(file_system->relative_path,
-                                                  strlen(file_system->relative_path),
-                                                  abs_path_local));
+                        path_replace_grandparent(file_system->relative_path,
+                                                 strlen(file_system->relative_path),
+                                                 abs_path_local));
                     break;
                 case FS_DIRECTORY:
                     if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
