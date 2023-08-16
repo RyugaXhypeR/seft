@@ -38,7 +38,7 @@ typedef enum {
 
 typedef struct {
     char *name;
-    char *absoulte_path;
+    char *absolute_path;
     char *grandparent_path;
     char *parent_path;
     char *relative_path;
