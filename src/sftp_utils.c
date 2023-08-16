@@ -184,6 +184,11 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
         return;
     }
 
+    /**
+     * This algorithm is based on::
+     *
+     *      https://github.com/changyuheng/columnify.py/blob/main/columnify/columnify.py
+     */
     for (;; len_cols++) {
         len_rows = CEIL(self->length, len_cols);
         len_buf_widths = 0;

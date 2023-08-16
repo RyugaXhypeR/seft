@@ -17,6 +17,19 @@
 #include "sftp_utils.h"
 #include "config.h"
 
+/**
+ * Function to initialize ssh session.
+ *
+ * :param host_name: Host name to connect to.
+ * :param port_id: Port number to connect to.
+ *
+ * :return: ssh_session object.
+ *
+ * .. note:: This function will exit the program if any error occurs.
+ *
+ * .. warning:: This function will ask for passphrase from the user.
+ *    If the user enters wrong passphrase, the program will exit.
+ */
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
     int8_t result;
@@ -52,6 +65,13 @@ do_ssh_init(char *host_name, uint32_t port_id) {
     return session;
 }
 
+/**
+ * Function to clean ssh session.
+ *
+ * :param session: ssh_session object.
+ *
+ * .. note:: This function will exit the program if any error occurs.
+ */
 sftp_session
 do_sftp_init(ssh_session session_ssh) {
     int8_t result;
@@ -76,6 +96,17 @@ do_sftp_init(ssh_session session_ssh) {
     return session_sftp;
 }
 
+/**
+ * Helper function to print files/directories in list view.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param directory: Directory to list.
+ * :param flag: A bit mask to specify the type of listing.
+ *     If 0th bit is set, then list all files/directories in the directory.
+ *     If 1st bit is set, then list subdirectories.
+ *     If 2nd bit is set, then list files/directories in list view.
+ * */
 CommandStatusE
 list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *directory,
                 uint8_t flag) {
@@ -123,6 +154,13 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     return CMD_OK;
 }
 
+/**
+ * Helper function to create a file on the remote server.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param abs_file_path: Absolute path of the file to be created.
+ */
 CommandStatusE
 create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
                    char *abs_file_path) {
@@ -138,6 +176,13 @@ create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
     return CMD_OK;
 }
 
+/**
+ * Helper function to create a directory on the remote server.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param abs_dir_path: Absolute path of the directory to be created.
+ */
 CommandStatusE
 create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                   char *abs_dir_path) {
@@ -158,6 +203,14 @@ create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
     }
 }
 
+/**
+ * Helper function to copy a file from local to remote server.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param abs_path_local: Absolute path of the file on local machine.
+ * :param abs_path_remote: Absolute path of the file on remote machine.
+ */
 static CommandStatusE
 copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
                                char *abs_path_remote, char *abs_path_local) {
@@ -190,6 +243,14 @@ copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sft
     return CMD_OK;
 }
 
+/**
+ * Helper function to copy a file from remote to local server.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param abs_path_local: Absolute path of the file on local machine.
+ * :param abs_path_remote: Absolute path of the file on remote machine.
+ */
 static CommandStatusE
 copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                      char *abs_path_remote, char *abs_path_local) {
@@ -245,6 +306,14 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
     return CMD_OK;
 }
 
+/**
+ * Helper function to copy a file from remote to local server.
+ *
+ * :param session_ssh: ssh_session object.
+ * :param session_sftp: sftp_session object.
+ * :param abs_path_local: Absolute path of the file on local machine.
+ * :param abs_path_remote: Absolute path of the file on remote machine.
+ */
 CommandStatusE
 copy_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
                           char *abs_path_remote, char *abs_path_local) {
@@ -268,6 +337,10 @@ copy_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
     return CMD_OK;
 }
 
+/**
+ * Helper function to free the ssh session and its resources.
+ * If the session is connected, it will be disconnect safely.
+ */
 void
 clean_ssh_session(ssh_session session) {
     DBG_DEBUG("Freeing session: %p", (void *)session);
@@ -279,6 +352,7 @@ clean_ssh_session(ssh_session session) {
     ssh_finalize();
 }
 
+/** Helper function to free the sftp session and its resources. */
 void
 clean_sftp_session(sftp_session session) {
     DBG_DEBUG("Freeing session: %p", (void *)session);

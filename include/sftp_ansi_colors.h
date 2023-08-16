@@ -7,6 +7,7 @@
 
 #define ANSI_COLOR_COMBINED_LEN 9
 
+/** ANSI-CODED string literals */
 #define ANSI_RESET "\x1b[0m"
 #define ANSI_BOLD "\x1b[1m"
 #define ANSI_UNDERLINE "\x1b[4m"

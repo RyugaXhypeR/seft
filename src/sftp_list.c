@@ -14,6 +14,12 @@ List_new(size_t length, size_t type_size) {
     return self;
 }
 
+/** Reallocate memory for ``ListT``.
+ *
+ * .. note:: This function will only allocate memory if ``new_size`` is
+ *    greater than ``self->allocated``, so its safe to call it without
+ *    checking ``self->allocated``.
+ */
 void
 List_re_alloc(ListT *self, size_t new_size) {
     if (self->allocated >= new_size) {
@@ -22,7 +28,7 @@ List_re_alloc(ListT *self, size_t new_size) {
 
     /** Over-allocating the list to reduce calls to ``realloc``
      *
-     * .. note:: For more information about the algrithm check
+     * .. note:: For more information about the algorithm check
      *    `PyList resized-length algorithm`_.
      *
      * .. PyList resized-length algorithm::
@@ -40,6 +46,15 @@ List_re_alloc(ListT *self, size_t new_size) {
     self->allocated = new_size;
 }
 
+/**
+ * Push an item to the end of the list.
+ *
+ * :param self: The list to push to
+ * :param other: The item to push
+ * :param size: The size of elements to push and the size of the type of the element
+ *
+ * .. note:: Calls ``memcpy`` to copy ``other`` to the end of the list.
+ */
 void
 List_push(ListT *self, void *other, size_t size) {
     List_re_alloc(self, self->length + 1);
@@ -47,6 +62,13 @@ List_push(ListT *self, void *other, size_t size) {
     memcpy(self->list[self->length++], other, size);
 }
 
+/**
+ * Pop an item from the end of the list.
+ *
+ * :param self: The list to pop from
+ *
+ * :returns: The popped item
+ */
 void *
 List_pop(ListT *self) {
     if (!List_is_empty(self)) {
@@ -55,11 +77,13 @@ List_pop(ListT *self) {
     return NULL;
 }
 
+/** Check if the list is empty. */
 bool
 List_is_empty(ListT *self) {
     return !self->length;
 }
 
+/** Get the ``i``th index of the list */
 void *
 List_get(ListT *self, size_t index) {
     if (index >= self->length) {
@@ -69,12 +93,25 @@ List_get(ListT *self, size_t index) {
     return self->list[index];
 }
 
+/** Free the list and its items. */
 void
 List_free(ListT *self) {
     free(self->list);
     free(self);
 }
 
+/**
+ * Slice the list from ``start`` to ``stop``. This is generalized for pointers,
+ * so if any complex data types like ``struct`` are used, they must be handled
+ * by the user.
+ *
+ * :param self: The list to slice
+ * :param start: [INCLUSIVE] The start index
+ * :param stop: [EXCLUSIVE] The stop index
+ *
+ * .. note:: If ``stop`` is greater than the length of the list, it will be
+ *    set to the length of the list.
+ */
 ListT *
 List_slice(ListT *self, size_t start, size_t stop) {
     size_t length = stop - start;

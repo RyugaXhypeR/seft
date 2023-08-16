@@ -22,8 +22,10 @@
 /* Simple macro to count the number of arguments in ``__VA_ARGS__`` */
 #define __NUM_ARGS(type, ...) (sizeof((type[]){__VA_ARGS__}) / sizeof(type))
 
+/** Macro to join paths using ``PATH_SEPARATOR`` */
 #define FS_JOIN_PATH(...) path_join(__NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
 
+/** Set ``PATH_SEPARATOR`` to ``\\`` on Windows and ``/`` on Posix-systems */
 #ifdef WIN32
 #define PATH_SEPARATOR '\\'
 #else
@@ -36,12 +38,24 @@ typedef enum {
     FS_SYM_LINK = 3,
 } FileTypesT;
 
+/** Structure to hold information about a file system object */
 typedef struct {
+    /** File name */
     char *name;
+
+    /** (System dependent) Absolute path to the file system object */
     char *absolute_path;
+
+    /** (System dependent) Absolute path to the grandparent directory */
     char *grandparent_path;
+
+    /** Path of the parent directory */
     char *parent_path;
+
+    /** Relative path to the file system object */
     char *relative_path;
+
+    /** Type of the file system object */
     FileTypesT type;
 } FileSystemT;
 

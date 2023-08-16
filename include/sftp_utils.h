@@ -4,13 +4,16 @@
 #include <stdint.h>
 #include "sftp_list.h"
 
+/** Macro to check if a bit is set in a bit mask */
 #define BIT_MATCH(bit_mask, pos) ((bit_mask) & (1 << (pos)))
+
+/** Macro to set a bit in a bit mask */
 #define BIT_SET(bit_mask, pos) ((bit_mask) |= (1 << (pos)))
+
+/** Macro to get the ceiling of a division */
 #define CEIL(dividend, divisor) ((dividend) / (divisor) + (dividend) % (divisor))
 
-#define BUF_SIZE_FORMATTED_COLUMNWISE 16384
-#define BUF_SIZE_LINE_LIMIT 1024
-
+/** Macro to check if ``__VA_ARGS__`` passed to a macro is empty */
 #define VA_ARGS_IS_EMPTY(...) (sizeof((char[]){#__VA_ARGS__}) == 1)
 
 uint32_t get_window_column_length(void);
