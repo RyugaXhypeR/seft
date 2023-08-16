@@ -33,7 +33,7 @@ typedef struct {
 CommandHandlerT *CommandHandler_new(const char *command_name,
                                     const char *command_help_msg,
                                     CommandStatusE (*command_handler)(ArgsT args));
-void CommandHandler_free(CommandHandlerT *command_handler);
+void CommandHandler_free(CommandHandlerT *self);
 void CommandHandler_display_help_msg(CommandHandlerT *self);
 
 /** Helper function */
