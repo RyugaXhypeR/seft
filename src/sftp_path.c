@@ -303,12 +303,6 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
         FileSystem_list_push(path_content_list, file_system);
     }
 
-    // for (size_t i = 0; i < path_content_list->length; i++) {
-    //     // printf("Fileconents: name: %s, relpath: %s\n", 
-    //     //        ((FileSystemT *)List_get(path_content_list, i))->name, ((FileSystemT *)List_get(path_content_list, i))->relative_path);
-    //
-    // }
-
     result = sftp_closedir(dir);
     if (result != SSH_FX_OK) {
         DBG_ERR("Couldn't close directory %s: %s\n", dir->name,
