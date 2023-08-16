@@ -11,6 +11,8 @@
 #define BUF_SIZE_FORMATTED_COLUMNWISE 16384
 #define BUF_SIZE_LINE_LIMIT 1024
 
+#define VA_ARGS_IS_EMPTY(...) (sizeof((char[]){#__VA_ARGS__}) == 1)
+
 uint32_t get_window_column_length(void);
 uint32_t u32_list_sum(ListT *self);
 size_t char_list_max_len(ListT *self);
