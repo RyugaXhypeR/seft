@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <sys/stat.h>
 
 #include <libssh/libssh.h>
@@ -11,10 +10,12 @@
 
 #include "commands.h"
 #include "debug.h"
+#include "sftp_ansi_colors.h"
 #include "sftp_client.h"
 #include "sftp_list.h"
 #include "sftp_path.h"
 #include "sftp_utils.h"
+#include "config.h"
 
 ssh_session
 do_ssh_init(char *host_name, uint32_t port_id) {
@@ -108,9 +109,9 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     for (size_t i = 0; i < dir_contents->length; i++) {
         fs = List_get(dir_contents, i);
         if (fs->type == FS_DIRECTORY) {
-            sprintf(filename, " %s", fs->name);
+            sprintf(filename, (COLOR_FOLDER ICON_FOLDER " %s" ANSI_RESET), fs->name);
         } else {
-            sprintf(filename, " %s", fs->name);
+            sprintf(filename, (COLOR_FILE ICON_FILE " %s" ANSI_RESET), fs->name);
         }
         if (check_path_type(filename, strlen(filename), fs->type == FS_DIRECTORY, flag)) {
             List_push(formatted_contents, filename, strlen(filename) + 1);
