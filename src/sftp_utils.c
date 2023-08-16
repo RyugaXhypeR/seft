@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "sftp_list.h"
 #include "sftp_utils.h"
+#include "sftp_ansi_colors.h"
 
 #define MAX_COLS 128
 
@@ -56,6 +57,22 @@ char_list_max_len(ListT *self) {
     return len_max;
 }
 
+/** Get the sum of the lengths of all strings in the list
+ *
+ * .. note:: Currently, resultant sum is adjusted to match the length
+ *    ansi-color-formatted string, its not the absolute length of sum.
+ *    Won't work for lists which store non-ansi-color-formatted strings.
+ * */
+size_t
+char_list_sum_len(ListT *self) {
+    size_t len = 0;
+
+    for (size_t i = 0; i < self->length; i++) {
+        len += strlen(List_get(self, i));
+    }
+
+    return len - ANSI_COLOR_COMBINED_LEN * (self->length + 1);
+}
 ListT *
 char_list_slice(ListT *self, size_t start, size_t stop) {
     size_t length = stop - start;
