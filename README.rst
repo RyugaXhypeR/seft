@@ -1,8 +1,9 @@
 SFTP CLI
 ========
 
-.. image:: https://www.github.com/RyugaXhypeR/sftp-cli/.github/workflows/c-cpp.yml/badge.svg
-    :target: https://github.com/RyugaXhypeR/sftp-cli/actions
+.. image:: https://www.github.com/RyugaXhypeR/sftp-cli/actions/workflows/c-cpp.yml/badge.svg
+   :alt: Build Status
+   :target: https://github.com/RyugaXhypeR/sftp-cli/actions
 
 A cli tool for interacting with SFTP servers.
 
