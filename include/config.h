@@ -7,6 +7,8 @@
 #define ICON_GIT_FOLDER ""
 #define ICON_FILE ""
 
+#define REPL_PROMPT ANSI_FG_WHITE "⟩ "
+
 #define COLOR_FOLDER ANSI_FG_BLUE
 #define COLOR_FILE ANSI_FG_GREEN
 
