@@ -8,6 +8,19 @@
 
 #include "commands.h"
 
+
+#define FLAG_LIST_BIT_POS_ALL 0x0
+
+#define FLAG_LIST_BIT_POS_DIR_ONLY 0x1
+
+#define FLAG_LIST_BIT_POS_FILE_ONLY 0x2
+
+#define FLAG_LIST_BIT_POS_LONG_LIST 0x3
+
+#define FLAG_LIST_BIT_POS_SORT 0x4
+
+#define FLAG_LIST_BIT_POS_SORT_REVERSE 0x5
+
 /** SSH FUNCTIONS */
 ssh_session do_ssh_init(char *host_name, uint32_t port_id);
 void clean_ssh_session(ssh_session session);
