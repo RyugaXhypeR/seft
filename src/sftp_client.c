@@ -124,7 +124,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
         return CMD_INTERNAL_ERROR;
     }
 
-    if (BIT_MATCH(flag, 2)) /* list view */ {
+    if (BIT_MATCH(flag, FLAG_LIST_BIT_POS_LONG_LIST)) /* list view */ {
         while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
             if (check_path_type(attr->name, strlen(attr->name),
                                 attr->type == SSH_FILEXFER_TYPE_DIRECTORY, flag)) {
@@ -144,7 +144,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
         } else {
             sprintf(filename, (COLOR_FILE ICON_FILE " %s" ANSI_RESET), fs->name);
         }
-        if (check_path_type(filename, strlen(filename), fs->type == FS_DIRECTORY, flag)) {
+        if (check_path_type(fs->name, strlen(fs->name), fs->type == FS_DIRECTORY, flag)) {
             List_push(formatted_contents, filename, strlen(filename) + 1);
         }
     }
