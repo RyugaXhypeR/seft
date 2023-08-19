@@ -93,6 +93,11 @@ List_get(ListT *self, size_t index) {
     return self->list[index];
 }
 
+size_t
+List_length(ListT *self) {
+    return self->length;
+}
+
 /** Free the list and its items. */
 void
 List_free(ListT *self) {
