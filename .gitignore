@@ -10,7 +10,11 @@ sftp_cli-sftp.o
 sftp_cli_config.h
 sftp_cli_config.h.in
 
+autom4te.cache/
+.deps/
 src/*.o
+src/.deps/
+src/.dirstamp
 
 config.status
 config.log
