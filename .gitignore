@@ -9,6 +9,9 @@ compile_commands.json
 sftp_cli-sftp.o
 sftp_cli_config.h
 sftp_cli_config.h.in
+
+src/*.o
+
 config.status
 config.log
 compile
