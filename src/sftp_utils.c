@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "debug.h"
+#include "sftp_client.h"
 #include "sftp_list.h"
 #include "sftp_path.h"
 #include "sftp_utils.h"
@@ -232,7 +233,7 @@ char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter) {
  * flag */
 bool
 check_show_hidden(char *path_str, size_t length, uint8_t flag) {
-    return BIT_MATCH(flag, 0) ? 1 : !path_is_hidden(path_str, length);
+    return BIT_MATCH(flag, FLAG_LIST_BIT_POS_ALL) ? 1 : !path_is_hidden(path_str, length);
 }
 
 /** Helper function to check if the ``path_str`` satisfies the flag. */
@@ -241,8 +242,10 @@ check_path_type(char *path_str, size_t length, bool is_dir, uint8_t flag) {
     uint8_t is_valid = check_show_hidden(path_str, length, flag);
 
     /* If flag is set to ``show directories only`` */
-    if (BIT_MATCH(flag, 1)) {
+    if (BIT_MATCH(flag, FLAG_LIST_BIT_POS_DIR_ONLY)) {
         return is_dir && is_valid;
+    } else if (BIT_MATCH(flag, FLAG_LIST_BIT_POS_FILE_ONLY)) {
+        return !is_dir && is_valid;
     }
 
     return is_valid;
