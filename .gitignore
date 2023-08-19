@@ -3,26 +3,30 @@
 .idea/
 .code/
 
+
 compile_commands.json
 
-# Build output
-sftp_cli-sftp.o
-sftp_cli_config.h
-sftp_cli_config.h.in
 
-autom4te.cache/
+# Build output
 .deps/
 src/*.o
 src/.deps/
 src/.dirstamp
+autom4te.cache/
 
-config.status
-config.log
 compile
 missing
 stamp-h1
-Makefile
-Makefile.in
-sftp_cli
 install-sh
 depcomp
+
+sftp_cli
+sftp_cli-sftp.o
+sftp_cli_config.h
+sftp_cli_config.h.in
+
+config.log
+config.status
+
+Makefile
+Makefile.in
