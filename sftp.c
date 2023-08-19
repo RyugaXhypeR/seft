@@ -33,7 +33,7 @@ static struct argp_option option_list[] = {
     {"dir", 'd', 0, 0, "List directories only", 0},
     {"file", 'f', 0, 0, "List files only", 0},
     {"all", 'a', 0, 0, "List hidden and non-hidden files", 0},
-    {"reverse", 'r', 0, 0, "Recursive listing", 0},
+    {"reverse", 'r', 0, 0, "List in reverse order", 0},
     {"sort", 'S', 0, 0, "Sort by field", 0},
     {0},
 };
