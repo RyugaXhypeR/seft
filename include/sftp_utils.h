@@ -5,10 +5,10 @@
 #include "sftp_list.h"
 
 /** Macro to check if a bit is set in a bit mask */
-#define BIT_MATCH(bit_mask, pos) ((bit_mask) & (1 << (pos)))
+#define BIT_MATCH(bit_mask, pos) ((bit_mask) & (1UL << (pos)))
 
 /** Macro to set a bit in a bit mask */
-#define BIT_SET(bit_mask, pos) ((bit_mask) |= (1 << (pos)))
+#define BIT_SET(bit_mask, pos) ((bit_mask) |= (1UL << (pos)))
 
 /** Macro to get the ceiling of a division */
 #define CEIL(dividend, divisor) ((dividend) / (divisor) + (dividend) % (divisor))
