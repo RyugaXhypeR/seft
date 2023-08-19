@@ -4,3 +4,18 @@
 .code/
 
 compile_commands.json
+
+# Build output
+sftp_cli-sftp.o
+sftp_cli_config.h
+sftp_cli_config.h.in
+config.status
+config.log
+compile
+missing
+stamp-h1
+Makefile
+Makefile.in
+sftp_cli
+install-sh
+depcomp
