@@ -22,3 +22,5 @@ jobs:
       run: ./configure
     - name: make
       run: make
+    - name: dist-check
+      run: make dist
