@@ -134,7 +134,7 @@ parse_option_list(int32_t key, char *arg, struct argp_state *state) {
             }
             break;
         case ARGP_KEY_ARG:
-            args->dir = arg;
+            args->dir = strdup(arg);
             break;
     }
 
@@ -274,8 +274,9 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
         if (list_args.dir == NULL) {
             return CMD_INVALID_ARGS_TYPE;
         }
-        puts(list_args.dir);
         list_remote_dir(session_ssh, session_sftp, list_args.dir, list_args.flag);
+
+        free(list_args.dir);
 
     } else if (!strcmp(subcommand, "copy")) {
         CopyArgsT copy_args = {0, NULL, NULL};
@@ -300,6 +301,9 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
             // copy_from_local_to_remote(session_ssh, session_sftp, copy_args.source,
             //                           copy_args.dest);
         }
+
+        free(copy_args.source);
+        free(copy_args.dest);
 
     } else if (!strcmp(subcommand, "create")) {
         CreateArgsT create_args = {0, NULL};
@@ -326,6 +330,8 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
         } else { /* TODO */
         }
 
+        free(create_args.filesystem);
+
     } else if (!strcmp(subcommand, "connect")) {
         ConnectArgsT connect_args = {NULL, 0};
 
@@ -349,6 +355,8 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
 
         session_ssh = do_ssh_init(connect_args.host, connect_args.port);
         session_sftp = do_sftp_init(session_ssh);
+
+        free(connect_args.host);
     } else {
         return CMD_INVALID_COMMAND;
     }
@@ -390,5 +398,6 @@ main(int length, char *arg_vec[]) {
         clean_sftp_session(session_sftp);
         clean_ssh_session(session_ssh);
     }
+
     return 0;
 }
