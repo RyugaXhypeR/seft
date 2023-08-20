@@ -45,7 +45,7 @@ You can use the ``--help`` option to get a list of available commands::
 
 Connecting to a server::
 
-    sftp_cli --subsystem <subsystem> --port <port>
+    sftp_cli connect --subsystem <subsystem> --port <port>
 
 
 License
