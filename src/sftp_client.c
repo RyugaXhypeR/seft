@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -241,6 +242,56 @@ copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sft
         return CMD_INTERNAL_ERROR;
     }
 
+    sftp_close(from_file);
+    fclose(to_file);
+
+    return CMD_OK;
+}
+
+static CommandStatusE
+copy_file_from_local_to_remote(ssh_session session_ssh, sftp_session session_sftp,
+                               char *abs_path_local, char *abs_path_remote) {
+    int32_t num_bytes_read;
+    char file_buf[BUF_SIZE_FILE_CONTENTS + 1];
+    struct stat from_file_stat;
+    FILE *from_file; 
+    sftp_file to_file;
+
+    stat(abs_path_local, &from_file_stat);
+
+    /* Not really sure why this is needed but, it doesn't work without it
+     * so  ¯\_(ツ)_/¯ */
+    if (!from_file_stat.st_size) {
+        create_remote_file(session_ssh, session_sftp, abs_path_remote);
+    }
+
+    from_file = fopen(abs_path_local, "r");
+    to_file = sftp_open(session_sftp, abs_path_remote, O_CREAT | O_WRONLY, FS_CREATE_PERM);
+
+    if (from_file == NULL) {
+        DBG_ERR("Couldn't open file: %s", abs_path_local);
+        return CMD_INTERNAL_ERROR;
+    }
+
+    if (to_file == NULL) {
+        DBG_ERR("Couldn't create file: %s: %s", abs_path_remote,
+                ssh_get_error(session_ssh));
+        return CMD_INTERNAL_ERROR;
+    }
+
+    while ((num_bytes_read = fread(file_buf, sizeof *file_buf, BUF_SIZE_FILE_CONTENTS,
+                                   from_file)) > 0) {
+        sftp_write(to_file, file_buf, num_bytes_read);
+    }
+
+    if (num_bytes_read < 0) {
+        DBG_ERR("Couldn't read local file: Error Code: %d", errno);
+        return CMD_INTERNAL_ERROR;
+    }
+
+    fclose(from_file);
+    sftp_close(to_file);
+
     return CMD_OK;
 }
 
@@ -253,8 +304,8 @@ copy_file_from_remote_to_local(ssh_session session_ssh, sftp_session session_sft
  * :param abs_path_remote: Absolute path of the file on remote machine.
  */
 static CommandStatusE
-copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
-                     char *abs_path_remote, char *abs_path_local) {
+copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
+                            char *abs_path_remote, char *abs_path_local) {
     ListT *sub_dir_path_stack = List_new(1, sizeof(char *));
     ListT *remote_dir;
     FileSystemT *file_system;
@@ -307,6 +358,61 @@ copy_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
     return CMD_OK;
 }
 
+static CommandStatusE
+copy_local_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
+                           char *abs_path_local, char *abs_path_remote) {
+    ListT *sub_dir_path_stack = List_new(1, sizeof(char *));
+    ListT *local_dir;
+    FileSystemT *file_system;
+    char *dir_path_remote = NULL;
+    char *dir_path_local = NULL;
+
+    do {
+        if (dir_path_remote == NULL || dir_path_local == NULL) {
+            dir_path_remote = abs_path_remote;
+            dir_path_local = abs_path_local;
+        } else {
+            dir_path_local = List_pop(sub_dir_path_stack);
+            dir_path_remote = path_replace_grandparent(
+                dir_path_local, strlen(dir_path_local), abs_path_remote);
+        }
+
+        create_remote_dir(session_ssh, session_sftp, dir_path_remote);
+        local_dir = path_read_local_dir(dir_path_local);
+        if (local_dir == NULL) {
+            return CMD_INTERNAL_ERROR;
+        }
+
+        for (size_t i = 0; i < local_dir->length; i++) {
+            file_system = List_get(local_dir, i);
+
+            switch (file_system->type) {
+                case FS_REG_FILE:
+                    copy_file_from_local_to_remote(
+                        session_ssh, session_sftp, file_system->relative_path,
+                        path_replace_grandparent(file_system->relative_path,
+                                                 strlen(file_system->relative_path),
+                                                 abs_path_remote));
+                    break;
+                case FS_DIRECTORY:
+                    if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
+                        List_push(sub_dir_path_stack, file_system->relative_path,
+                                  (sizeof *file_system->relative_path) *
+                                      (strlen(file_system->relative_path) + 1));
+                    }
+                    break;
+                case FS_SYM_LINK:
+                    break; /* TODO */
+                default:
+                    DBG_ERR("Unknown type %d", file_system->type);
+            }
+        }
+
+    } while (!List_is_empty(sub_dir_path_stack));
+
+    return CMD_OK;
+}
+
 /**
  * Helper function to copy a file from remote to local server.
  *
@@ -327,12 +433,31 @@ copy_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
 
     if (from->type == SSH_FILEXFER_TYPE_DIRECTORY) {
         DBG_DEBUG("Copying dir from %s to %s", abs_path_remote, abs_path_local);
-        return copy_dir_recursively(session_ssh, session_sftp, abs_path_remote,
-                                    abs_path_local);
+        return copy_remote_dir_recursively(session_ssh, session_sftp, abs_path_remote,
+                                           abs_path_local);
     } else if (from->type == SSH_FILEXFER_TYPE_REGULAR) {
         DBG_DEBUG("Copying file from %s to %s", abs_path_remote, abs_path_local);
         return copy_file_from_remote_to_local(session_ssh, session_sftp, abs_path_remote,
                                               abs_path_local);
+    }
+
+    return CMD_OK;
+}
+
+CommandStatusE
+copy_from_local_to_remote(ssh_session session_ssh, sftp_session session_sftp,
+                          char *abs_path_local, char *abs_path_remote) {
+    struct stat from;
+    stat(abs_path_local, &from);
+
+    if (S_ISDIR(from.st_mode)) {
+        DBG_DEBUG("Copying dir from %s to %s", abs_path_local, abs_path_remote);
+        return copy_local_dir_recursively(session_ssh, session_sftp, abs_path_local,
+                                          abs_path_remote);
+    } else if (S_ISREG(from.st_mode)) {
+        DBG_DEBUG("Copying file from %s to %s", abs_path_local, abs_path_remote);
+        return copy_file_from_local_to_remote(session_ssh, session_sftp, abs_path_local,
+                                              abs_path_remote);
     }
 
     return CMD_OK;
