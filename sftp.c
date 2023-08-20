@@ -357,11 +357,16 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
 
 int
 main(int argc, char *argv[]) {
+main(int length, char *arg_vec[]) {
     char input[4096];
+    CommandStatusE result;
+
+    /* Skipping file name */
+    arg_vec++;
+    length--;
 
     for (;;) {
-        if (subcommand_dispatcher(argv, argc) != CMD_OK) {
-            break;
+        result = subcommand_dispatcher(arg_vec, length);
         }
 
         printf(REPL_PROMPT);
@@ -370,12 +375,12 @@ main(int argc, char *argv[]) {
         }
 
         input[strcspn(input, "\n")] = '\0';
-
-        argc = strlen(input);
-        argv = get_arg_vec(input, &argc);
+        length = strlen(input);
+        arg_vec = get_arg_vec(input, &length);
     }
 
     if (session_sftp != NULL && session_ssh != NULL) {
+        DBG_INFO("Cleaning up ssh and sftp sessions: %s", "");
         clean_sftp_session(session_sftp);
         clean_ssh_session(session_ssh);
     }
