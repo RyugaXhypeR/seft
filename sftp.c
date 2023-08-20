@@ -326,7 +326,7 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
         } else { /* TODO */
         }
 
-    } else {
+    } else if (!strcmp(subcommand, "connect")) {
         ConnectArgsT connect_args = {NULL, 0};
 
         arg_parser = (struct argp){option_connect,
