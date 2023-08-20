@@ -251,13 +251,14 @@ parse_option_connect(int32_t key, char *arg, struct argp_state *state) {
 
 static CommandStatusE
 subcommand_dispatcher(char **arg_vec, uint32_t length) {
-    char *subcommand = arg_vec[0];
+    char *subcommand;
     struct argp arg_parser;
 
     if (length < 1) {
-        return -1;
+        return CMD_INVALID_ARGS_COUNT;
     }
 
+    subcommand = arg_vec[0];
     if (!strcmp(subcommand, "list")) {
         ListArgsT list_args = {NULL, 0};
 
@@ -265,9 +266,16 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
             option_list, parse_option_list, doc_list, doc_header_list, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &list_args);
 
-        if (list_args.dir != NULL) {
-            list_remote_dir(session_ssh, session_sftp, list_args.dir, list_args.flag);
+        /* Print help message and continue */
+        if (length == 1) {
+            return CMD_OK;
         }
+
+        if (list_args.dir == NULL) {
+            return CMD_INVALID_ARGS_TYPE;
+        }
+        puts(list_args.dir);
+        list_remote_dir(session_ssh, session_sftp, list_args.dir, list_args.flag);
 
     } else if (!strcmp(subcommand, "copy")) {
         CopyArgsT copy_args = {0, NULL, NULL};
@@ -275,6 +283,15 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
         arg_parser = (struct argp){
             option_copy, parse_option_copy, doc_copy, doc_header_copy, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &copy_args);
+
+        /* Print help message and continue */
+        if (length == 1) {
+            return CMD_OK;
+        }
+
+        if (copy_args.source == NULL || copy_args.dest) {
+            return CMD_INVALID_ARGS_TYPE;
+        }
 
         if (BIT_MATCH(copy_args.flag, FLAG_COPY_BIT_POS_IS_REMOTE)) {
             copy_from_remote_to_local(session_ssh, session_sftp, copy_args.source,
@@ -291,6 +308,15 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
             option_create, parse_option_create, doc_create, doc_header_create, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &create_args);
 
+        /* Print help message and continue */
+        if (length == 1) {
+            return CMD_OK;
+        }
+
+        if (create_args.filesystem == NULL) {
+            return CMD_INVALID_ARGS_TYPE;
+        }
+
         if (BIT_MATCH(create_args.flag, FLAG_CREATE_BIT_POS_IS_REMOTE)) {
             if (BIT_MATCH(create_args.flag, FLAG_CREATE_BIT_POS_IS_DIR)) {
                 create_remote_dir(session_ssh, session_sftp, create_args.filesystem);
@@ -298,7 +324,6 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
                 create_remote_file(session_ssh, session_sftp, create_args.filesystem);
             }
         } else { /* TODO */
-
         }
 
     } else {
@@ -313,11 +338,19 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
                                    0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &connect_args);
 
-        if (connect_args.host == NULL) {
-            return CMD_NOT_EXECUTED;
+        /* Print help message and continue */
+        if (length == 1) {
+            return CMD_OK;
         }
+
+        if (connect_args.host == NULL) {
+            return CMD_INVALID_ARGS_TYPE;
+        }
+
         session_ssh = do_ssh_init(connect_args.host, connect_args.port);
         session_sftp = do_sftp_init(session_ssh);
+    } else {
+        return CMD_INVALID_COMMAND;
     }
     return CMD_OK;
 }
