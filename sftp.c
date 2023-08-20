@@ -146,11 +146,21 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
     CopyArgsT *args = state->input;
 
     switch (key) {
-        case ARGP_KEY_ARG:
-            if (args->source == NULL) {
-                args->source = arg;
-            } else {
-                args->dest = arg;
+        case 'r':
+            if (!BIT_MATCH(args->flag, FLAG_CREATE_BIT_POS_IS_SET)) {
+                args->flag = (1 << FLAG_CREATE_BIT_POS_IS_REMOTE) | 1;
+            }
+            break;
+        case 'l':
+            if (!BIT_MATCH(args->flag, FLAG_CREATE_BIT_POS_IS_SET)) {
+                args->flag = (1 << !FLAG_CREATE_BIT_POS_IS_REMOTE) | 1;
+            }
+            break;
+        case 'd':
+            BIT_SET(args->flag, FLAG_CREATE_BIT_POS_IS_DIR);
+            break;
+        case 'f':
+            BIT_CLEAR(args->flag, FLAG_CREATE_BIT_POS_IS_DIR);
         case 'h':
             argp_state_help(state, stdout,
                             ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
