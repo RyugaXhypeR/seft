@@ -161,6 +161,7 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
             break;
         case 'f':
             BIT_CLEAR(args->flag, FLAG_CREATE_BIT_POS_IS_DIR);
+            break;
         case 'h':
             argp_state_help(state, stdout,
                             ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
@@ -169,8 +170,8 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
             if (state->argc < 2) {
                 argp_state_help(state, stdout,
                                 ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
-                break;
             }
+            break;
         case ARGP_KEY_ARG: {
             if (arg == NULL) {
                 break;
@@ -210,8 +211,8 @@ parse_option_create(int32_t key, char *arg, struct argp_state *state) {
             if (state->argc < 2) {
                 argp_state_help(state, stdout,
                                 ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
-                break;
             }
+            break;
         case ARGP_KEY_ARG: {
             if (arg != NULL) {
                 args->filesystem = strdup(arg);
@@ -241,8 +242,8 @@ parse_option_connect(int32_t key, char *arg, struct argp_state *state) {
             if (state->argc < 2) {
                 argp_state_help(state, stdout,
                                 ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
-                break;
             }
+            break;
     }
 
     return 0;
