@@ -1,6 +1,5 @@
 #include <stdlib.h>
 
-#include <libssh/sftp.h>
 #include <string.h>
 
 #include "sftp_list.h"

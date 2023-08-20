@@ -1,13 +1,9 @@
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
-#include "debug.h"
 #include "sftp_client.h"
 #include "sftp_list.h"
 #include "sftp_path.h"

@@ -1,11 +1,9 @@
 #include <argp.h>
 #include <stddef.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <libssh/libssh.h>
 #include <libssh/sftp.h>
 
 #include "commands.h"
@@ -291,16 +289,16 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
             return CMD_OK;
         }
 
-        if (copy_args.source == NULL || copy_args.dest) {
+        if (copy_args.source == NULL || copy_args.dest == NULL) {
             return CMD_INVALID_ARGS_TYPE;
         }
 
         if (BIT_MATCH(copy_args.flag, FLAG_COPY_BIT_POS_IS_REMOTE)) {
             copy_from_remote_to_local(session_ssh, session_sftp, copy_args.source,
                                       copy_args.dest);
-        } else { /* TODO */
-            // copy_from_local_to_remote(session_ssh, session_sftp, copy_args.source,
-            //                           copy_args.dest);
+        } else {
+            copy_from_local_to_remote(session_ssh, session_sftp, copy_args.source,
+                                      copy_args.dest);
         }
 
         free(copy_args.source);
