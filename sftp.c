@@ -171,7 +171,19 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
                                 ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
                 break;
             }
+        case ARGP_KEY_ARG: {
+            if (arg == NULL) {
+                break;
+            }
+            if (state->arg_num == 0) {
+                args->source = strdup(arg);
+            } else if (state->arg_num == 1) {
+                args->dest = strdup(arg);
+            }
+            break;
+        }
     }
+
     return 0;
 }
 
