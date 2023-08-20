@@ -123,8 +123,19 @@ parse_option_list(int32_t key, char *arg, struct argp_state *state) {
         case 's':
             BIT_SET(args->flag, FLAG_LIST_BIT_POS_SORT);
             break;
+        case 'h':
+            argp_state_help(state, stdout,
+                            ARGP_HELP_DOC | ARGP_HELP_USAGE | ARGP_HELP_LONG);
+            break;
+        case ARGP_KEY_END:
+            if (state->argc < 2) {
+                argp_state_help(state, stdout,
+                                ARGP_HELP_DOC | ARGP_HELP_USAGE | ARGP_HELP_LONG);
+            }
+            break;
         case ARGP_KEY_ARG:
             args->dir = arg;
+            break;
     }
 
     return 0;
@@ -140,6 +151,15 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
                 args->source = arg;
             } else {
                 args->dest = arg;
+        case 'h':
+            argp_state_help(state, stdout,
+                            ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
+            break;
+        case ARGP_KEY_END:
+            if (state->argc < 2) {
+                argp_state_help(state, stdout,
+                                ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
+                break;
             }
     }
     return 0;
@@ -156,6 +176,16 @@ parse_option_create(int32_t key, char *arg, struct argp_state *state) {
             break;
         default:
             return ARGP_ERR_UNKNOWN;
+        case 'h':
+            argp_state_help(state, stdout,
+                            ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
+            break;
+        case ARGP_KEY_END:
+            if (state->argc < 2) {
+                argp_state_help(state, stdout,
+                                ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
+                break;
+            }
     }
     return 0;
 }
@@ -172,7 +202,16 @@ parse_option_connect(int32_t key, char *arg, struct argp_state *state) {
             args->port = atoi(arg);
             break;
         default:
+        case 'h':
+            argp_state_help(state, stdout,
+                            ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
             break;
+        case ARGP_KEY_END:
+            if (state->argc < 2) {
+                argp_state_help(state, stdout,
+                                ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
+                break;
+            }
     }
 
     return 0;
