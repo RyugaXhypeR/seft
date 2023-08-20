@@ -356,7 +356,6 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
 }
 
 int
-main(int argc, char *argv[]) {
 main(int length, char *arg_vec[]) {
     char input[4096];
     CommandStatusE result;
@@ -367,6 +366,13 @@ main(int length, char *arg_vec[]) {
 
     for (;;) {
         result = subcommand_dispatcher(arg_vec, length);
+
+        if (result == CMD_INVALID_ARGS_COUNT) {
+            DBG_ERR("Invalid number of arguments provided: %d", length);
+        } else if (result == CMD_INVALID_ARGS_TYPE) {
+            DBG_ERR("Invalid type of arguments provided %s", "");
+        } else if (result == CMD_INVALID_COMMAND) {
+            DBG_ERR("Invalid command name: " ANSI_FG_GREEN "%s" ANSI_RESET, arg_vec[0]);
         }
 
         printf(REPL_PROMPT);
