@@ -18,7 +18,6 @@
 #define MAX_NUM_COMMANDS 128
 
 const char *argp_program_version = "SFTP-CLI 0.1";
-static char doc[] = "A cli tool to interact with SFTP servers";
 
 static char doc_header_connect[] =
     "Interact with SFTP servers via command-line interface";
@@ -72,12 +71,19 @@ typedef struct {
 } ListArgsT;
 
 typedef struct {
-    char *dest;
+#define FLAG_COPY_BIT_POS_IS_SET 0x0
+#define FLAG_COPY_BIT_POS_IS_REMOTE 0x1
+    uint8_t flag;
     char *source;
+    char *dest;
 } CopyArgsT;
 
 typedef struct {
-    char **fs;
+#define FLAG_CREATE_BIT_POS_IS_SET 0x0
+#define FLAG_CREATE_BIT_POS_IS_REMOTE 0x1
+#define FLAG_CREATE_BIT_POS_IS_DIR 0x2
+    uint8_t flag;
+    char *filesystem;
 } CreateArgsT;
 
 static ssh_session session_ssh = NULL;
