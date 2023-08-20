@@ -23,16 +23,15 @@ enum DBG_LEVELS {
  *
  * .. note:: Currently requires you to pass in variadic args to it
  * */
-#define LOG(level, prompt, ...)                                                        \
-    do {                                                                               \
-        if (DBG_STATUS) {                                                              \
-            fprintf(stderr, "[%s]:%s:%d:%s: " prompt "\n", dbg_level_to_str(level),    \
-                    __FILE__, __LINE__, __func__, __VA_ARGS__);                        \
-        }                                                                              \
-        if (level == DBG_LEVEL_CRITICAL) {                                             \
-            fprintf(stderr, (ANSI_FG_RED "ERR:: " ANSI_RESET prompt "\n"), \
-                    __VA_ARGS__);                                                      \
-        }                                                                              \
+#define LOG(level, prompt, ...)                                                          \
+    do {                                                                                 \
+        if (DBG_STATUS) {                                                                \
+            fprintf(stderr, "[%s]:%s:%d:%s: " prompt "\n", dbg_level_to_str(level),      \
+                    __FILE__, __LINE__, __func__, __VA_ARGS__);                          \
+        }                                                                                \
+        if (level == DBG_LEVEL_CRITICAL) {                                               \
+            fprintf(stderr, "[%s]::" prompt "\n", dbg_level_to_str(level), __VA_ARGS__); \
+        }                                                                                \
     } while (0)
 
 #define DBG_ERR(prompt, ...) LOG(DBG_LEVEL_CRITICAL, prompt, __VA_ARGS__)
@@ -43,12 +42,14 @@ static inline char*
 dbg_level_to_str(enum DBG_LEVELS level) {
     switch (level) {
         case DBG_LEVEL_DEBUG:
-            return "DEBUG";
+            return ANSI_FG_GREEN "DEBUG" ANSI_RESET;
         case DBG_LEVEL_INFO:
-            return "INFO";
+            return ANSI_FG_CYAN "INFO" ANSI_RESET;
         case DBG_LEVEL_CRITICAL:
-            return "CRITICAL";
+            return ANSI_FG_RED "CRITICAL" ANSI_RESET;
     }
+
+    return "";
 }
 
 #endif /* DEBUG_H */
