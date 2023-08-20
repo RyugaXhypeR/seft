@@ -20,28 +20,44 @@
 const char *argp_program_version = "SFTP-CLI 0.1";
 static char doc[] = "A cli tool to interact with SFTP servers";
 
+static char doc_header_connect[] =
+    "Interact with SFTP servers via command-line interface";
 static char doc_connect[] = "[-s] <subsystem/sftp-server> -p <port>";
 static struct argp_option option_connect[] = {
-    {"subsystem", 's', "SUBSYSTEM", 0, "The server to connect to", 0},
-    {"port", 'p', "PORT", 0, "Port of the server", 0},
+    {"subsystem", 's', "SUBSYSTEM", 0, "Specify the server subsystem to connect to", 0},
+    {"port", 'p', "PORT", 0, "Port number of the server", 0},
     {0},
 };
 
-static char doc_list[] = "<dir> [OPTIONS]";
+static char doc_header_list[] = "List files and directories";
+static char doc_list[] = "[<dir>] [OPTIONS]";
 static struct argp_option option_list[] = {
-    {"long", 'l', 0, 0, "Long listing format", 0},
-    {"dir", 'd', 0, 0, "List directories only", 0},
-    {"file", 'f', 0, 0, "List files only", 0},
-    {"all", 'a', 0, 0, "List hidden and non-hidden files", 0},
-    {"reverse", 'r', 0, 0, "List in reverse order", 0},
-    {"sort", 'S', 0, 0, "Sort by field", 0},
+    {"long", 'l', "LONG_LISTING", OPTION_ARG_OPTIONAL, "List in long listing format", 0},
+    {"dir", 'd', "DIR_ONLY", OPTION_ARG_OPTIONAL, "List directories only", 0},
+    {"file", 'f', "FILE_ONLY", OPTION_ARG_OPTIONAL, "List files only", 0},
+    {"all", 'a', "SHOW_ALL", OPTION_ARG_OPTIONAL, "Show hidden and non-hidden files", 0},
+    {"reverse", 'r', "REVERSE", OPTION_ARG_OPTIONAL, "Display in reverse order", 0},
+    {"sort", 's', "SORT", OPTION_ARG_OPTIONAL, "Sort by specified field", 0},
+    {"help", 'h', "HELP", OPTION_ARG_OPTIONAL, "Show help documentation", 0},
     {0},
 };
 
-static struct argp_option option_copy[] = {{0}};
+static char doc_header_copy[] =
+    "Synchronize filesystem bidirectionally between remote and local destinations.";
+static char doc_copy[] = "[OPTIONS]";
+static struct argp_option option_copy[] = {
+    {"local", 'l', 0, 0, "Copy filesystem object to the local computer", 0},
+    {"remote", 'r', 0, 0, "Copy filesystem object to the remote server", 0},
+    {0},
+};
+
+static char doc_header_create[] = "Create files and directories on remote server";
+static char doc_create[] = "[OPTIONS]";
 static struct argp_option option_create[] = {
-    {"dir", 'd', 0, 0, "Create directory", 0},
-    {"file", 'f', 0, 0, "Create file", 0},
+    {"dir", 'd', 0, 0, "Create a directory", 0},
+    {"file", 'f', 0, 0, "Create a file", 0},
+    {"local", 'l', 0, 0, "Create filesystem object on the local computer", 0},
+    {"remote", 'r', 0, 0, "Create filesystem object on the remote server", 0},
     {0},
 };
 
