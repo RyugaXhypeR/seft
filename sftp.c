@@ -104,6 +104,7 @@ get_arg_vec(char *input, int32_t *length) {
 static error_t
 parse_option_list(int32_t key, char *arg, struct argp_state *state) {
     ListArgsT *args = state->input;
+
     switch (key) {
         case 'l':
             BIT_SET(args->flag, FLAG_LIST_BIT_POS_LONG_LIST);
