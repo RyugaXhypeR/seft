@@ -36,4 +36,7 @@ CommandStatusE create_remote_dir(ssh_session session_ssh, sftp_session session_s
 CommandStatusE copy_from_remote_to_local(ssh_session session_ssh,
                                          sftp_session session_sftp, char *abs_path_remote,
                                          char *abs_path_local);
+CommandStatusE copy_from_local_to_remote(ssh_session session_ssh,
+                                         sftp_session session_sftp, char *abs_path_local,
+                                         char *abs_path_remote);
 #endif /* SFTP_CLIENT_H */
