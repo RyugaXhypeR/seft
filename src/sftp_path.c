@@ -7,6 +7,7 @@
 
 #include <libssh/libssh.h>
 #include <libssh/sftp.h>
+#include <dirent.h>
 
 #include "commands.h"
 #include "debug.h"
@@ -339,8 +340,8 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     sftp_dir dir;
     uint8_t result;
     sftp_attributes attr;
-    FileTypesT file_system_type;
-    FileSystemT *file_system;
+    FileTypesT filesystem_type;
+    FileSystemT *filesystem;
     char *attr_relative_path;
     ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
 
@@ -356,24 +357,66 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
 
         switch (attr->type) {
             case SSH_FILEXFER_TYPE_REGULAR:
-                file_system_type = FS_REG_FILE;
+                filesystem_type = FS_REG_FILE;
                 break;
             case SSH_FILEXFER_TYPE_DIRECTORY:
-                file_system_type = FS_DIRECTORY;
+                filesystem_type = FS_DIRECTORY;
                 break;
             default:
                 DBG_INFO("Ignoring filetype %d\n", attr->type);
                 continue;
         }
-        file_system = FileSystem_from_path(attr_relative_path, file_system_type);
-        FileSystem_list_push(path_content_list, file_system);
-        FileSystem_free(file_system);
+        filesystem = FileSystem_from_path(attr_relative_path, filesystem_type);
+        FileSystem_list_push(path_content_list, filesystem);
     }
 
     result = sftp_closedir(dir);
     if (result != SSH_FX_OK) {
         DBG_ERR("Couldn't close directory %s: %s\n", dir->name,
                 ssh_get_error(session_ssh));
+        return NULL;
+    }
+
+    return path_content_list;
+}
+
+ListT *
+path_read_local_dir(char *path) {
+    DIR *dir;
+    uint32_t result;
+    struct dirent *attr;
+    FileSystemT *filesystem;
+    FileTypesT filesystem_type;
+    ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
+    char *attr_relative_path;
+
+    dir = opendir(path);
+    if (dir == NULL) {
+        DBG_ERR("Couldn't open local directory `%s`", path);
+        return NULL;
+    }
+
+    while ((attr = readdir(dir)) != NULL) {
+        attr_relative_path = FS_JOIN_PATH(path, attr->d_name);
+
+        switch (attr->d_type) {
+            case DT_REG:
+                filesystem_type = FS_REG_FILE;
+                break;
+            case DT_DIR:
+                filesystem_type = FS_DIRECTORY;
+                break;
+            default:
+                DBG_INFO("Ignoring filetype %d\n", attr->d_type);
+                continue;
+        }
+        filesystem = FileSystem_from_path(attr_relative_path, filesystem_type);
+        FileSystem_list_push(path_content_list, filesystem);
+    }
+
+    result = closedir(dir);
+    if (result) {
+        DBG_ERR("Couldn't close directory %s", path);
         return NULL;
     }
 
