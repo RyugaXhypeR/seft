@@ -189,15 +189,19 @@ parse_option_copy(int32_t key, char *arg, struct argp_state *state) {
 
 static error_t
 parse_option_create(int32_t key, char *arg, struct argp_state *state) {
+    CreateArgsT *args = state->input;
+
     switch (key) {
-        case 'd':
-            printf("Create directory\n");
+        case 'r':
+            if (!BIT_MATCH(args->flag, FLAG_COPY_BIT_POS_IS_SET)) {
+                args->flag = (1 << FLAG_COPY_BIT_POS_IS_REMOTE) | 1;
+            }
             break;
-        case 'f':
-            printf("Create file\n");
+        case 'l':
+            if (!BIT_MATCH(args->flag, FLAG_COPY_BIT_POS_IS_SET)) {
+                args->flag = (1 << !FLAG_COPY_BIT_POS_IS_REMOTE) | 1;
+            }
             break;
-        default:
-            return ARGP_ERR_UNKNOWN;
         case 'h':
             argp_state_help(state, stdout,
                             ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
@@ -208,6 +212,12 @@ parse_option_create(int32_t key, char *arg, struct argp_state *state) {
                                 ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
                 break;
             }
+        case ARGP_KEY_ARG: {
+            if (arg != NULL) {
+                args->filesystem = strdup(arg);
+            }
+            break;
+        }
     }
     return 0;
 }
