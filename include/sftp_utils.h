@@ -10,6 +10,12 @@
 /** Macro to set a bit in a bit mask */
 #define BIT_SET(bit_mask, pos) ((bit_mask) |= (1UL << (pos)))
 
+#define BIT_CLEAR(bit_mask, pos) ((bit_mask) &= ~(1UL << (pos)))
+
+#define BIT_PLACE(bit_mask, pos, bin) ((bin) ? BIT_SET(bit_mask, pos) : BIT_CLEAR(bit_mask, pos))
+
+#define BIT_GET(bit_mask, pos) (((bit_mask) >> (pos)) & 1UL)
+
 /** Macro to get the ceiling of a division */
 #define CEIL(dividend, divisor) ((dividend) / (divisor) + (dividend) % (divisor))
 
@@ -23,5 +29,6 @@ ListT *char_list_equalized_slice(ListT *self, size_t len_rows, size_t len_cols);
 void char_list_format_columnwise(ListT *self, size_t width_screen, char *delimiter);
 bool check_show_hidden(char *path_str, size_t length, uint8_t flag);
 bool check_path_type(char *path_str, size_t length, bool is_dir, uint8_t flag);
+char *get_non_whitespace_word(char *str, size_t len, size_t start);
 
 #endif /* ifndef SFTP_UTILS_H */
