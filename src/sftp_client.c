@@ -54,7 +54,8 @@ do_ssh_init(char *host_name, uint32_t port_id) {
         exit(EXIT_FAILURE);
     }
 
-    ssh_getpass("Enter passphrase: ", passphrase, BUF_SIZE_PASSPHRASE, 0, 0);
+    printf((ANSI_FG_GREEN "%s's passphrase: " ANSI_RESET), host_name);
+    ssh_getpass("", passphrase, BUF_SIZE_PASSPHRASE, 0, 0);
     result = ssh_userauth_password(session, NULL, passphrase);
     if (result != SSH_AUTH_SUCCESS) {
         DBG_ERR("Authentication error: %s", ssh_get_error(session));
