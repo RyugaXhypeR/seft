@@ -233,7 +233,6 @@ parse_option_connect(int32_t key, char *arg, struct argp_state *state) {
         case 'p':
             args->port = atoi(arg);
             break;
-        default:
         case 'h':
             argp_state_help(state, stdout,
                             ARGP_HELP_DOC | ARGP_HELP_LONG | ARGP_HELP_USAGE);
@@ -249,7 +248,7 @@ parse_option_connect(int32_t key, char *arg, struct argp_state *state) {
     return 0;
 }
 
-static error_t
+static CommandStatusE
 subcommand_dispatcher(char **arg_vec, uint32_t length) {
     char *subcommand = arg_vec[0];
     struct argp arg_parser;
@@ -259,51 +258,80 @@ subcommand_dispatcher(char **arg_vec, uint32_t length) {
     }
 
     if (!strcmp(subcommand, "list")) {
-        ListArgsT list_args = {.flag = 0};
+        ListArgsT list_args = {NULL, 0};
 
-        arg_parser =
-            (struct argp){option_list, parse_option_list, doc_list, doc, 0, 0, 0};
+        arg_parser = (struct argp){
+            option_list, parse_option_list, doc_list, doc_header_list, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &list_args);
-        list_remote_dir(session_ssh, session_sftp, list_args.dir, list_args.flag);
+
+        if (list_args.dir != NULL) {
+            list_remote_dir(session_ssh, session_sftp, list_args.dir, list_args.flag);
+        }
 
     } else if (!strcmp(subcommand, "copy")) {
-        CopyArgsT copy_args = {NULL, NULL};
+        CopyArgsT copy_args = {0, NULL, NULL};
 
-        arg_parser = (struct argp){option_copy, parse_option_copy, 0, 0, 0, 0, 0};
+        arg_parser = (struct argp){
+            option_copy, parse_option_copy, doc_copy, doc_header_copy, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &copy_args);
-        copy_from_remote_to_local(session_ssh, session_sftp, copy_args.source,
-                                  copy_args.dest);
+
+        if (BIT_MATCH(copy_args.flag, FLAG_COPY_BIT_POS_IS_REMOTE)) {
+            copy_from_remote_to_local(session_ssh, session_sftp, copy_args.source,
+                                      copy_args.dest);
+        } else { /* TODO */
+            // copy_from_local_to_remote(session_ssh, session_sftp, copy_args.source,
+            //                           copy_args.dest);
+        }
 
     } else if (!strcmp(subcommand, "create")) {
-        CreateArgsT create_args;
+        CreateArgsT create_args = {0, NULL};
 
-        arg_parser = (struct argp){option_create, parse_option_create, 0, 0, 0, 0, 0};
+        arg_parser = (struct argp){
+            option_create, parse_option_create, doc_create, doc_header_create, 0, 0, 0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &create_args);
 
+        if (BIT_MATCH(create_args.flag, FLAG_CREATE_BIT_POS_IS_REMOTE)) {
+            if (BIT_MATCH(create_args.flag, FLAG_CREATE_BIT_POS_IS_DIR)) {
+                create_remote_dir(session_ssh, session_sftp, create_args.filesystem);
+            } else {
+                create_remote_file(session_ssh, session_sftp, create_args.filesystem);
+            }
+        } else { /* TODO */
+
+        }
+
     } else {
-        ConnectArgsT connect_args;
-        arg_parser = (struct argp){
-            option_connect, parse_option_connect, doc_connect, doc, 0, 0, 0};
+        ConnectArgsT connect_args = {NULL, 0};
+
+        arg_parser = (struct argp){option_connect,
+                                   parse_option_connect,
+                                   doc_connect,
+                                   doc_header_connect,
+                                   0,
+                                   0,
+                                   0};
         argp_parse(&arg_parser, length, arg_vec, 0, 0, &connect_args);
 
+        if (connect_args.host == NULL) {
+            return CMD_NOT_EXECUTED;
+        }
         session_ssh = do_ssh_init(connect_args.host, connect_args.port);
         session_sftp = do_sftp_init(session_ssh);
     }
-    return 0;
+    return CMD_OK;
 }
 
 int
-main(int32_t argc, char *argv[]) {
-    subcommand_dispatcher(argv, argc);
+main(int argc, char *argv[]) {
     char input[4096];
 
     for (;;) {
+        if (subcommand_dispatcher(argv, argc) != CMD_OK) {
+            break;
+        }
+
         printf(REPL_PROMPT);
         if (fgets(input, sizeof(input), stdin) == NULL) {
-            if (session_sftp != NULL && session_ssh != NULL) {
-                clean_sftp_session(session_sftp);
-                clean_ssh_session(session_ssh);
-            }
             break;
         }
 
@@ -311,8 +339,11 @@ main(int32_t argc, char *argv[]) {
 
         argc = strlen(input);
         argv = get_arg_vec(input, &argc);
-        subcommand_dispatcher(argv, argc);
     }
 
+    if (session_sftp != NULL && session_ssh != NULL) {
+        clean_sftp_session(session_sftp);
+        clean_ssh_session(session_ssh);
+    }
     return 0;
 }
