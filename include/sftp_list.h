@@ -22,7 +22,7 @@ typedef struct {
 
 ListT *List_new(size_t length, size_t type_size);
 void List_push(ListT *self, void *other, size_t size);
-void List_re_alloc(ListT *self, size_t new_size);
+void List_realloc(ListT *self, size_t new_size);
 size_t List_length(ListT *self);
 ListT *List_slice(ListT *self, size_t start, size_t stop);
 void *List_pop(ListT *self);
