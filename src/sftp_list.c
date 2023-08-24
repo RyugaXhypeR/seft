@@ -20,7 +20,7 @@ List_new(size_t length, size_t type_size) {
  *    checking ``self->allocated``.
  */
 void
-List_re_alloc(ListT *self, size_t new_size) {
+List_realloc(ListT *self, size_t new_size) {
     if (self->allocated >= new_size) {
         return;
     }
@@ -56,7 +56,7 @@ List_re_alloc(ListT *self, size_t new_size) {
  */
 void
 List_push(ListT *self, void *other, size_t size) {
-    List_re_alloc(self, self->length + 1);
+    List_realloc(self, self->length + 1);
     self->list[self->length] = malloc(size);
     memcpy(self->list[self->length++], other, size);
 }
