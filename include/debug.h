@@ -52,4 +52,32 @@ dbg_level_to_str(enum DBG_LEVELS level) {
     return "";
 }
 
+/** Log the size and allocate memory */
+static inline void*
+dbg_malloc(size_t size) {
+    void* ptr = malloc(size);
+
+    if (ptr == NULL) {
+        DBG_ERR("Unable to allocate %zu bytes of memory", size);
+        return NULL;
+    }
+
+    DBG_INFO("Allocated %zu bytes of memory", size);
+
+    return ptr;
+}
+
+/** Free if pointer is not NULL and log the result */
+static inline void
+dbg_safe_free(void* ptr) {
+
+    if (ptr == NULL) {
+        DBG_INFO("Pointer is null, not freeing %s", "");
+        return;
+    }
+
+    free(ptr);
+    DBG_INFO("Freed pointer: %p", ptr);
+}
+
 #endif /* DEBUG_H */
