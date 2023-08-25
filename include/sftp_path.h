@@ -44,15 +44,6 @@ typedef struct {
     /** File name */
     char *name;
 
-    /** (System dependent) Absolute path to the file system object */
-    char *absolute_path;
-
-    /** (System dependent) Absolute path to the grandparent directory */
-    char *grandparent_path;
-
-    /** Path of the parent directory */
-    char *parent_path;
-
     /** Relative path to the file system object */
     char *relative_path;
 
