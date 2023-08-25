@@ -3,6 +3,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <stdlib.h>
 #ifdef D
 #define DBG_STATUS 1
 #else
@@ -52,9 +53,10 @@ dbg_level_to_str(enum DBG_LEVELS level) {
     return "";
 }
 
-/** Log the size and allocate memory */
+/** Log the size and *malloc* memory */
 static inline void*
 dbg_malloc(size_t size) {
+    DBG_DEBUG("Allocating %zu bytes of memory...", size);
     void* ptr = malloc(size);
 
     if (ptr == NULL) {
@@ -67,10 +69,39 @@ dbg_malloc(size_t size) {
     return ptr;
 }
 
+/** Log the size and *calloc* memory */
+static inline void*
+dbg_calloc(size_t num_bytes, size_t type_size) {
+    void* ptr = calloc(num_bytes, type_size);
+
+    if (ptr == NULL) {
+        DBG_ERR("Unable to allocate %zu bytes of memory", num_bytes * type_size);
+        return NULL;
+    }
+
+    DBG_INFO("Allocated %zu bytes of memory", num_bytes * type_size);
+
+    return ptr;
+}
+
+/** Log the size and *relloc* memory for the pointer */
+static inline void*
+dbg_realloc(void *ptr, size_t new_size) {
+    void *new_allocted = realloc(ptr, new_size);
+
+    if (new_allocted == NULL) {
+        DBG_ERR("Unable to realloct memory for pointer %p", ptr);
+        return NULL;
+    }
+
+    DBG_INFO("Reallocated %zu bytes of memory for pointer: %p", new_size, ptr);
+
+    return new_allocted;
+}
+
 /** Free if pointer is not NULL and log the result */
 static inline void
 dbg_safe_free(void* ptr) {
-
     if (ptr == NULL) {
         DBG_INFO("Pointer is null, not freeing %s", "");
         return;
