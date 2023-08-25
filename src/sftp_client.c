@@ -117,7 +117,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     FileSystemT *fs;
     ListT *dir_contents;
     ListT *formatted_contents = List_new(1, sizeof(char *));
-    char *filename = malloc(BUF_SIZE_FS_NAME);
+    char *filename = dbg_malloc(BUF_SIZE_FS_NAME);
     size_t width_screen = get_window_column_length();
 
     dir = sftp_opendir(session_sftp, directory);
@@ -151,7 +151,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
         }
     }
     char_list_format_columnwise(formatted_contents, width_screen, "    ");
-
+    dbg_safe_free(filename);
 
     return CMD_OK;
 }
@@ -254,7 +254,7 @@ copy_file_from_local_to_remote(ssh_session session_ssh, sftp_session session_sft
     int32_t num_bytes_read;
     char file_buf[BUF_SIZE_FILE_CONTENTS + 1];
     struct stat from_file_stat;
-    FILE *from_file; 
+    FILE *from_file;
     sftp_file to_file;
 
     stat(abs_path_local, &from_file_stat);
@@ -352,6 +352,8 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                     DBG_ERR("Unknown type %d", file_system->type);
             }
         }
+
+        dbg_safe_free(file_path_local);
 
     } while (!List_is_empty(sub_dir_path_stack));
 
