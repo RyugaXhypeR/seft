@@ -66,4 +66,7 @@ ListT *path_read_local_dir(char *dir_path);
 ListT *path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                             char *dir_path);
 
+void FileSystem_free(FileSystemT *self);
+void FileSystem_list_free(ListT *self);
+
 #endif /* ifndef SFTP_PATH_H */
