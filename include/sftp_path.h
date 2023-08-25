@@ -52,14 +52,14 @@ typedef struct {
 } FileSystemT;
 
 char *path_str_slice(const char *path_str, size_t start, size_t stop);
-char *path_remove_prefix(char *path_str, size_t length);
-char *path_remove_suffix(char *path_str, size_t length);
-char *path_join(size_t num_paths, ...);
+void path_remove_prefix(char *path_str);
+void path_remove_suffix(char *path_str);
+void path_join(char *path_buf, size_t num_paths, ...);
 bool path_is_dotted(const char *path_str, size_t length);
 bool path_is_hidden(const char *path_str, size_t length);
 uint8_t path_mkdir_parents(char *path_str, size_t length);
 ListT *path_split(const char *path_str, size_t length);
-char *path_replace_grandparent(char *path_str, size_t length_str, char *grandparent);
+void path_replace_grandparent(char *path_str, char *grandparent);
 ListT *path_read_local_dir(char *dir_path);
 ListT *path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                             char *dir_path);
