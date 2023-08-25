@@ -380,7 +380,6 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
         for (size_t i = 0; i < remote_dir->length; i++) {
             filesystem = List_get(remote_dir, i);
 
-            puts(filesystem->name);
             if (path_is_dotted(filesystem->name, strlen(filesystem->name))) {
                 continue;
             }
