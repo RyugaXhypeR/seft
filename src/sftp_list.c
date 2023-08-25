@@ -7,8 +7,8 @@
 
 ListT *
 List_new(size_t length, size_t type_size) {
-    ListT *self = malloc(sizeof *self);
-    void **list = malloc(length * type_size);
+    ListT *self = dbg_malloc(sizeof *self);
+    void **list = dbg_malloc(length * type_size);
     *self = (ListT){.list = list, .length = 0, .allocated = length};
     return self;
 }
@@ -37,7 +37,7 @@ List_realloc(ListT *self, size_t new_size) {
      *      https://github.com/python/cpython/blob/main/Objects/listobject.c#L62-#L72 */
     new_size = (new_size + (new_size >> 3) + 6) & ~(size_t)3;
 
-    list = realloc(self->list, new_size * sizeof *self->list);
+    list = dbg_realloc(self->list, new_size * sizeof *self->list);
     if (list == NULL) {
         DBG_ERR("Couldn't reallocate memory for `ListT.dirs`, tried to allocate %zu size",
                 new_size);
@@ -103,8 +103,8 @@ List_length(ListT *self) {
 /** Free the list and its items. */
 void
 List_free(ListT *self) {
-    free(self->list);
-    free(self);
+    dbg_safe_free(self->list);
+    dbg_safe_free(self);
 }
 
 /**
