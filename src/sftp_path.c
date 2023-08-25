@@ -15,12 +15,13 @@
 #include "sftp_path.h"
 
 /**
- * Split a path string into a list of path components.
+ * Split a path string into a list of path components and return the sliced string.
  *
- * :param path_str:  NULL terminated string representing a path. The path can be absolute or relative.
- * :param start: [INCLUSIVE] Start index of the slice. It must be less than stop and length of ``path_str``.
- * :param stop: [EXCLUSIVE] Stop index of the slice. It must be greater than start.
- * :return: Sliced path string. It must be freed by the caller.
+ * :param path_str:  NULL terminated string representing a path. The path can be absolute
+ * or relative. :param start: [INCLUSIVE] Start index of the slice. It must be less than
+ * stop and length of ``path_str``. :param stop: [EXCLUSIVE] Stop index of the slice. It
+ * must be greater than start. :return: Sliced path string. It must be freed by the
+ * caller.
  */
 char *
 path_str_slice(const char *path_str, size_t start, size_t stop) {
@@ -31,7 +32,7 @@ path_str_slice(const char *path_str, size_t start, size_t stop) {
         return NULL;
     }
 
-    sliced_path_str = calloc(length, sizeof *sliced_path_str);
+    sliced_path_str = dbg_calloc(length, sizeof *sliced_path_str);
     for (size_t i = start; i < stop; i++) {
         sliced_path_str[i - start] = path_str[i];
     }
@@ -40,68 +41,75 @@ path_str_slice(const char *path_str, size_t start, size_t stop) {
     return sliced_path_str;
 }
 
+void
+path_str_shift_left(char *path_str, size_t num_shifts) {
+    size_t len_path_str = strlen(path_str);
+
+    if (num_shifts > len_path_str) {
+        return;
+    }
+
+    for (size_t i = 0; i < num_shifts; i++, len_path_str--) {
+        for (size_t j = 0; j < len_path_str; j++) {
+            path_str[j] = path_str[j + 1];
+        }
+    }
+    path_str[len_path_str] = '\0';
+}
+
 /**
  * Remove redundant prefixes from filesystem items (files and dirs).
  * Basically converts ``./this`` to ``this`` and ``////this`` to ``/this``
  */
-char *
-path_remove_prefix(char *path_str, size_t length) {
-    char *cleaned_path_str = path_str;
+void
+path_remove_prefix(char *path_str) {
     size_t num_slash_prefix = 0;
-    uint8_t is_root_dir = 1;
+    int8_t root_dir_slash = 1;
+    size_t len_path_str = strlen(path_str);
 
-    if (length < 2) {
-        return path_str;
+    if (len_path_str < 2) {
+        return;
     }
 
+    /* Checking is path starts with ``./`` */
     if (path_str[0] == '.' && path_str[1] == PATH_SEPARATOR) {
-        cleaned_path_str = path_str_slice(path_str, 2, length);
-        length -= 2;
-        is_root_dir = 0;
+        path_str_shift_left(path_str, 2);
+        len_path_str -= 2;
+        root_dir_slash = 0;
     }
 
-    for (size_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < len_path_str; i++, num_slash_prefix++) {
         /* Break as soon as the first non path separator is found. */
-        if (cleaned_path_str[i] != PATH_SEPARATOR) {
+        if (path_str[i] != PATH_SEPARATOR) {
             break;
         }
-
-        num_slash_prefix++;
     }
 
     if (num_slash_prefix) {
-        cleaned_path_str =
-            path_str_slice(cleaned_path_str, num_slash_prefix - is_root_dir, length);
+        path_str_shift_left(path_str, num_slash_prefix - root_dir_slash);
     }
-
-    return cleaned_path_str;
 }
 
 /**
  * Remove redundant suffixes from filesystem items (files and dirs).
  * For example: ``this/`` to ``this`` and ``this////`` to ``this``
  */
-char *
-path_remove_suffix(char *path_str, size_t length) {
-    char *cleaned_path_str = path_str;
+void
+path_remove_suffix(char *path_str) {
     size_t num_slash_suffix = 0;
+    size_t len_path_str = strlen(path_str);
 
-    if (length < 2) {
-        return cleaned_path_str;
+    if (len_path_str < 2) {
+        return;
     }
 
-    for (ssize_t i = (ssize_t)length - 1; i > -1; i++) {
-        if (cleaned_path_str[i] != PATH_SEPARATOR) {
+    for (ssize_t i = (ssize_t)len_path_str - 1; i > -1; i--, num_slash_suffix++) {
+        if (path_str[i] != PATH_SEPARATOR) {
             break;
         }
-        num_slash_suffix++;
     }
 
-    if (num_slash_suffix) {
-        cleaned_path_str = path_str_slice(path_str, 0, length - num_slash_suffix + 1);
-    }
-
-    return cleaned_path_str;
+    path_str[len_path_str - num_slash_suffix] = '\0';
 }
 
 /**
@@ -113,32 +121,26 @@ path_remove_suffix(char *path_str, size_t length) {
  *
  * .. note:: Recommended to use ``FS_PATH_JOIN(...)` instead of this function.
  */
-char *
-path_join(size_t num_paths, ...) {
+void
+path_join(char *path_buf, size_t num_paths, ...) {
     va_list args;
-    size_t fs_len;
-    size_t path_len = 0;
-    char *path_buf = calloc(BUF_SIZE_FS_PATH, (sizeof *path_buf));
+    size_t path_len = strlen(path_buf);
     char *fs_name;
 
     va_start(args, num_paths);
     for (size_t i = 0; i < num_paths && path_len < BUF_SIZE_FS_PATH; i++) {
         fs_name = va_arg(args, char *);
-        fs_len = strlen(fs_name);
-        fs_name = path_remove_prefix(fs_name, fs_len);
-        fs_len = strlen(fs_name);
-        fs_name = path_remove_suffix(fs_name, fs_len);
+        path_remove_prefix(fs_name);
+        path_remove_suffix(fs_name);
+
+        if (path_len) {
+            path_buf[path_len++] = PATH_SEPARATOR;
+        }
 
         path_len += strlen(fs_name);
         strcat(path_buf, fs_name);
-
-        if (i < num_paths - 1) {
-            path_buf[path_len++] = PATH_SEPARATOR;
-        }
     }
     va_end(args);
-
-    return path_buf;
 }
 
 /** Clear a path buffer. */
@@ -153,9 +155,9 @@ path_buf_clear(char *path_buf, size_t length) {
  * Split a path string into a list of path components.
  * For example: ``/this/is/a/path`` to ``["this", "is", "a", "path"]``
  *
- * :param path_str:  NULL terminated string representing a path. The path can be absolute or relative.
- * :param length: Length of the path string.
- * :return: List of path components. It must be freed by the caller.
+ * :param path_str:  NULL terminated string representing a path. The path can be
+ * absolute or relative. :param length: Length of the path string. :return: List of
+ * path components. It must be freed by the caller.
  */
 ListT *
 path_split(const char *path_str, size_t length) {
@@ -183,9 +185,9 @@ path_split(const char *path_str, size_t length) {
  * Check if a path is dotted.
  * For example: ``.`` and ``..`` are dotted paths.
  *
- * :param path_str:  NULL terminated string representing a path. The path can be absolute or relative.
- * :param length: Length of the path string.
- * :return: True if the path is dotted, False otherwise.
+ * :param path_str:  NULL terminated string representing a path. The path can be
+ * absolute or relative. :param length: Length of the path string. :return: True if
+ * the path is dotted, False otherwise.
  */
 bool
 path_is_dotted(const char *path_str, size_t length) {
@@ -199,9 +201,9 @@ path_is_dotted(const char *path_str, size_t length) {
  * Check if a path is hidden.
  * For example: ``.hidden`` and ``.hidden/`` are hidden paths.
  *
- * :param path_str:  NULL terminated string representing a path. The path can be absolute or relative.
- * :param length: Length of the path string.
- * :return: True if the path is hidden, False otherwise.
+ * :param path_str:  NULL terminated string representing a path. The path can be
+ * absolute or relative. :param length: Length of the path string. :return: True if
+ * the path is hidden, False otherwise.
  */
 bool
 path_is_hidden(const char *path_str, size_t length) {
@@ -216,33 +218,59 @@ path_is_hidden(const char *path_str, size_t length) {
  * Replace the head (grandparent) of a path with a new head.
  * For example: ``/this/is/a/path`` to ``/new/head/is/a/path``
  *
- * :param path_str:  NULL terminated string representing a path. The path can be absolute or relative.
- * :param length: Length of the path string.
- * :param grandparent: New head of the path.
+ * :param path_str:  NULL terminated string representing a path. The path can be
+ * absolute or relative. :param length: Length of the path string. :param grandparent:
+ * New head of the path.
  */
-char *
-path_replace_grandparent(char *path_str, size_t length_str, char *grandparent) {
+void
+path_replace_grandparent(char *path_str, char *grandparent) {
     size_t slash_index = 0;
     char *replaced_head = path_str;
+    size_t len_path_str = strlen(path_str);
 
-    if (length_str < 3) {
-        return false;
+    if (len_path_str < 3) {
+        return;
     }
 
-    for (; slash_index < length_str; slash_index++) {
+    for (; slash_index < len_path_str; slash_index++) {
         if (path_str[slash_index] == PATH_SEPARATOR) {
             break;
         }
     }
 
-    if (slash_index == length_str) {
-        return replaced_head;
+    if (slash_index == len_path_str) {
+        return;
+        ;
     }
 
-    replaced_head = path_str_slice(replaced_head, slash_index + 1, length_str);
-    replaced_head = FS_JOIN_PATH(grandparent, replaced_head);
+    path_str_shift_left(replaced_head, slash_index + 1);
+    path_buf_clear(path_str, strlen(path_str));
+    FS_JOIN_PATH(path_str, grandparent, replaced_head);
+    free(replaced_head);
+}
 
-    return replaced_head;
+void
+path_replace(char *path_str, char *path_head_to_replace, char *path_head_replacement,
+             size_t max_count) {
+    size_t len_path_head_to_replace = strlen(path_head_to_replace);
+    size_t len_path_head_replacement = strlen(path_head_replacement);
+    size_t remaining_len;
+    char *occurrence;
+
+    while (max_count--) {
+        /* ``occurrence`` is a reference to first occurrence of ``path_head_to_replace``
+         * in ``path_str``. No need to free ``occurrence`` */
+        occurrence = strstr(path_str, path_head_to_replace);
+        if (occurrence == NULL) {
+            break;
+        }
+
+        remaining_len = strlen(occurrence + len_path_head_to_replace);
+        memmove(occurrence + len_path_head_replacement,
+                occurrence + len_path_head_to_replace, remaining_len + 1);
+        memcpy(occurrence, path_head_replacement, len_path_head_replacement);
+        path_str = occurrence + len_path_head_replacement;
+    }
 }
 
 /** Create parent directories of the given path if they don't exist. */
@@ -256,7 +284,7 @@ path_mkdir_parents(char *path_str, size_t length) {
 
     for (size_t i = 0; i < path_list->length; i++) {
         if (i) {
-            path_buf = FS_JOIN_PATH(path_buf, List_get(path_list, i));
+            FS_JOIN_PATH(path_buf, List_get(path_list, i));
         }
 
         if (stat(path_buf, &_dir_stats) == -1) {
@@ -270,7 +298,9 @@ path_mkdir_parents(char *path_str, size_t length) {
         }
     }
 
+    free(path_buf);
     List_free(path_list);
+
     return 1;
 }
 
@@ -283,20 +313,17 @@ FileSystem_from_path(char *path, uint8_t type) {
     *file_system = (FileSystemT){
         .name = malloc(BUF_SIZE_FS_NAME),
         .relative_path = malloc(BUF_SIZE_FS_PATH),
-        .absolute_path = malloc(BUF_SIZE_FS_PATH),
-        .grandparent_path = malloc(BUF_SIZE_FS_PATH),
-        .parent_path = malloc(BUF_SIZE_FS_PATH),
         .type = type,
     };
 
-    if (*path == PATH_SEPARATOR) {
-        strcpy(file_system->absolute_path, path);
-    } else {
-        strcpy(file_system->relative_path, path);
-    }
+    strcpy(file_system->relative_path, path);
 
     split = path_split(path, strlen(path));
     strcpy(file_system->name, List_pop(split));
+
+    for (size_t i = 0; i < split->length - 1; i++) {
+        dbg_safe_free(List_pop(split));
+    }
 
     return file_system;
 }
@@ -308,12 +335,9 @@ FileSystem_from_path(char *path, uint8_t type) {
  * */
 void
 FileSystem_free(FileSystemT *self) {
-    free(self->name);
-    free(self->absolute_path);
-    free(self->relative_path);
-    free(self->grandparent_path);
-    free(self->parent_path);
-    free(self);
+    dbg_safe_free(self->name);
+    dbg_safe_free(self->relative_path);
+    dbg_safe_free(self);
 }
 
 void
@@ -324,7 +348,7 @@ FileSystem_copy(FileSystemT *self, FileSystemT *dest) {
 
 void
 FileSystem_list_push(ListT *self, FileSystemT *fs) {
-    List_re_alloc(self, self->length + 1);
+    List_realloc(self, self->length + 1);
     self->list[self->length] = FileSystem_from_path(fs->relative_path, fs->type);
     FileSystem_copy(fs, self->list[self->length++]);
 }
@@ -342,7 +366,7 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     sftp_attributes attr;
     FileTypesT filesystem_type;
     FileSystemT *filesystem;
-    char *attr_relative_path;
+    char *attr_relative_path = dbg_malloc(BUF_SIZE_FS_PATH);
     ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
 
     dir = sftp_opendir(session_sftp, path);
@@ -353,7 +377,10 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     }
 
     while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
-        attr_relative_path = FS_JOIN_PATH(path, attr->name);
+        if (path_is_dotted(attr->name, strlen(attr->name))) {
+            continue;
+        }
+        FS_JOIN_PATH(attr_relative_path, path, attr->name);
 
         switch (attr->type) {
             case SSH_FILEXFER_TYPE_REGULAR:
@@ -367,8 +394,12 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
                 continue;
         }
         filesystem = FileSystem_from_path(attr_relative_path, filesystem_type);
+        path_buf_clear(attr_relative_path, strlen(attr_relative_path));
         FileSystem_list_push(path_content_list, filesystem);
+        FileSystem_free(filesystem);
     }
+
+    dbg_safe_free(attr_relative_path);
 
     result = sftp_closedir(dir);
     if (result != SSH_FX_OK) {
@@ -387,8 +418,8 @@ path_read_local_dir(char *path) {
     struct dirent *attr;
     FileSystemT *filesystem;
     FileTypesT filesystem_type;
+    char *attr_relative_path = dbg_calloc(BUF_SIZE_FS_PATH, sizeof *attr_relative_path);
     ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
-    char *attr_relative_path;
 
     dir = opendir(path);
     if (dir == NULL) {
@@ -397,7 +428,10 @@ path_read_local_dir(char *path) {
     }
 
     while ((attr = readdir(dir)) != NULL) {
-        attr_relative_path = FS_JOIN_PATH(path, attr->d_name);
+        if (path_is_dotted(attr->d_name, strlen(attr->d_name))) {
+            continue;
+        }
+        FS_JOIN_PATH(attr_relative_path, path, attr->d_name);
 
         switch (attr->d_type) {
             case DT_REG:
@@ -411,8 +445,12 @@ path_read_local_dir(char *path) {
                 continue;
         }
         filesystem = FileSystem_from_path(attr_relative_path, filesystem_type);
+        path_buf_clear(attr_relative_path, strlen(attr_relative_path) + 1);
         FileSystem_list_push(path_content_list, filesystem);
+        FileSystem_free(filesystem);
     }
+
+    dbg_safe_free(attr_relative_path);
 
     result = closedir(dir);
     if (result) {
