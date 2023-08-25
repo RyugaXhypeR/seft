@@ -60,6 +60,8 @@ bool path_is_hidden(const char *path_str, size_t length);
 uint8_t path_mkdir_parents(char *path_str, size_t length);
 ListT *path_split(const char *path_str, size_t length);
 void path_replace_grandparent(char *path_str, char *grandparent);
+void path_replace(char *path_str, char *path_head_to_replace, char *path_head_replacement,
+                  size_t max_count);
 ListT *path_read_local_dir(char *dir_path);
 ListT *path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
                             char *dir_path);
