@@ -162,7 +162,7 @@ path_buf_clear(char *path_buf, size_t length) {
 ListT *
 path_split(const char *path_str, size_t length) {
     ListT *path_list = List_new(0, sizeof(char *));
-    char *path_buf = malloc(BUF_SIZE_FS_NAME * sizeof *path_buf);
+    char *path_buf = dbg_calloc(BUF_SIZE_FS_NAME,  sizeof *path_buf);
     size_t path_buf_len = 0;
 
     for (size_t i = 0; i < length; i++) {
@@ -246,7 +246,7 @@ path_replace_grandparent(char *path_str, char *grandparent) {
     path_str_shift_left(replaced_head, slash_index + 1);
     path_buf_clear(path_str, strlen(path_str));
     FS_JOIN_PATH(path_str, grandparent, replaced_head);
-    free(replaced_head);
+    dbg_safe_free(replaced_head);
 }
 
 void
@@ -298,7 +298,7 @@ path_mkdir_parents(char *path_str, size_t length) {
         }
     }
 
-    free(path_buf);
+    dbg_safe_free(path_buf);
     List_free(path_list);
 
     return 1;
@@ -307,12 +307,12 @@ path_mkdir_parents(char *path_str, size_t length) {
 /** Create a new file system object from a path. */
 FileSystemT *
 FileSystem_from_path(char *path, uint8_t type) {
-    FileSystemT *file_system = malloc(sizeof *file_system);
+    FileSystemT *file_system = dbg_malloc(sizeof *file_system);
     ListT *split;
 
     *file_system = (FileSystemT){
-        .name = malloc(BUF_SIZE_FS_NAME),
-        .relative_path = malloc(BUF_SIZE_FS_PATH),
+        .name = dbg_malloc(BUF_SIZE_FS_NAME),
+        .relative_path = dbg_malloc(BUF_SIZE_FS_PATH),
         .type = type,
     };
 
@@ -337,6 +337,15 @@ void
 FileSystem_free(FileSystemT *self) {
     dbg_safe_free(self->name);
     dbg_safe_free(self->relative_path);
+    dbg_safe_free(self);
+}
+
+void
+FileSystem_list_free(ListT *self) {
+    for (size_t i = 0; i < List_length(self); i++) {
+        FileSystem_free(List_get(self, i));
+    }
+
     dbg_safe_free(self);
 }
 
@@ -366,7 +375,7 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     sftp_attributes attr;
     FileTypesT filesystem_type;
     FileSystemT *filesystem;
-    char *attr_relative_path = dbg_malloc(BUF_SIZE_FS_PATH);
+    char *attr_relative_path = dbg_calloc(BUF_SIZE_FS_PATH, sizeof *attr_relative_path);
     ListT *path_content_list = List_new(1, sizeof(FileSystemT *));
 
     dir = sftp_opendir(session_sftp, path);
@@ -377,9 +386,6 @@ path_read_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *p
     }
 
     while ((attr = sftp_readdir(session_sftp, dir)) != NULL) {
-        if (path_is_dotted(attr->name, strlen(attr->name))) {
-            continue;
-        }
         FS_JOIN_PATH(attr_relative_path, path, attr->name);
 
         switch (attr->type) {
@@ -428,9 +434,6 @@ path_read_local_dir(char *path) {
     }
 
     while ((attr = readdir(dir)) != NULL) {
-        if (path_is_dotted(attr->d_name, strlen(attr->d_name))) {
-            continue;
-        }
         FS_JOIN_PATH(attr_relative_path, path, attr->d_name);
 
         switch (attr->d_type) {
