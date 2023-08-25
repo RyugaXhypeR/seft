@@ -23,7 +23,8 @@
 #define __NUM_ARGS(type, ...) (sizeof((type[]){__VA_ARGS__}) / sizeof(type))
 
 /** Macro to join paths using ``PATH_SEPARATOR`` */
-#define FS_JOIN_PATH(...) path_join(__NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
+#define FS_JOIN_PATH(path_buf, ...) \
+    path_join(path_buf, __NUM_ARGS(char *, __VA_ARGS__), __VA_ARGS__)
 
 /** Set ``PATH_SEPARATOR`` to ``\\`` on Windows and ``/`` on Posix-systems */
 #ifdef WIN32
