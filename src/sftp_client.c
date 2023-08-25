@@ -174,6 +174,7 @@ create_remote_file(ssh_session session_ssh, sftp_session session_sftp,
         return CMD_INTERNAL_ERROR;
     }
 
+    DBG_INFO("Created file: %s", abs_file_path);
     sftp_close(file);
     return CMD_OK;
 }
@@ -203,6 +204,44 @@ create_remote_dir(ssh_session session_ssh, sftp_session session_sftp,
             DBG_ERR("Error: %s\n", ssh_get_error(session_ssh));
             return CMD_INTERNAL_ERROR;
     }
+}
+
+static CommandStatusE
+create_parents_remote(ssh_session session_ssh, sftp_session session_sftp,
+                      char *path_str) {
+    char *path_buf = dbg_malloc(BUF_SIZE_FS_PATH);
+    ListT *path_list = path_split(path_str, strlen(path_str));
+    int8_t result;
+
+    path_buf = List_get(path_list, 0);
+    for (size_t i = 0; i < path_list->length; i++) {
+        if (i) {
+            FS_JOIN_PATH(path_buf, List_get(path_list, i));
+        }
+
+        result = sftp_mkdir(session_sftp, path_buf, FS_CREATE_PERM);
+        if (!result) {
+            continue;
+        }
+
+
+        switch (sftp_get_error(session_sftp)) {
+            case SSH_FX_FILE_ALREADY_EXISTS:
+                DBG_INFO("Directory %s already exists", path_buf);
+                break;
+            case SSH_FX_PERMISSION_DENIED:
+                DBG_ERR("Permission Denied: directory %s could not be created", path_buf);
+                break;
+            default:
+                DBG_ERR("Error while creating parent:%s:: %s\n", path_buf, ssh_get_error(session_ssh));
+                break;
+        }
+    }
+
+    dbg_safe_free(path_buf);
+    List_free(path_list);
+
+    return CMD_OK;
 }
 
 /**
@@ -262,11 +301,14 @@ copy_file_from_local_to_remote(ssh_session session_ssh, sftp_session session_sft
     /* Not really sure why this is needed but, it doesn't work without it
      * so  ¯\_(ツ)_/¯ */
     if (!from_file_stat.st_size) {
+        DBG_INFO("File with 0 size: %s", abs_path_local);
         create_remote_file(session_ssh, session_sftp, abs_path_remote);
+        return CMD_OK;
     }
 
     from_file = fopen(abs_path_local, "r");
-    to_file = sftp_open(session_sftp, abs_path_remote, O_CREAT | O_WRONLY, FS_CREATE_PERM);
+    to_file =
+        sftp_open(session_sftp, abs_path_remote, O_CREAT | O_WRONLY, FS_CREATE_PERM);
 
     if (from_file == NULL) {
         DBG_ERR("Couldn't open file: %s", abs_path_local);
@@ -308,9 +350,10 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                             char *abs_path_remote, char *abs_path_local) {
     ListT *sub_dir_path_stack = List_new(1, sizeof(char *));
     ListT *remote_dir;
-    FileSystemT *file_system;
+    FileSystemT *filesystem;
     char *dir_path_remote = NULL;
     char *dir_path_local = NULL;
+    char *file_path_local = NULL;
 
     do {
         if (dir_path_remote == NULL || dir_path_local == NULL) {
@@ -318,8 +361,8 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
             dir_path_local = abs_path_local;
         } else {
             dir_path_remote = List_pop(sub_dir_path_stack);
-            dir_path_local = path_replace_grandparent(
-                dir_path_remote, strlen(dir_path_remote), abs_path_local);
+            dir_path_local = dir_path_remote;
+            path_replace(dir_path_local, abs_path_remote, abs_path_local, 1);
         }
 
         path_mkdir_parents(dir_path_local, strlen(dir_path_local));
@@ -329,27 +372,28 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
         }
 
         for (size_t i = 0; i < remote_dir->length; i++) {
-            file_system = List_get(remote_dir, i);
+            filesystem = List_get(remote_dir, i);
 
-            switch (file_system->type) {
-                case FS_REG_FILE:
-                    copy_from_remote_to_local(
-                        session_ssh, session_sftp, file_system->relative_path,
-                        path_replace_grandparent(file_system->relative_path,
-                                                 strlen(file_system->relative_path),
-                                                 abs_path_local));
+            switch (filesystem->type) {
+                case FS_REG_FILE: {
+                    file_path_local = strdup(filesystem->relative_path);
+                    path_replace(file_path_local, abs_path_remote, abs_path_local, 1);
+                    copy_from_remote_to_local(session_ssh, session_sftp,
+                                              filesystem->relative_path, file_path_local);
+
                     break;
+                }
                 case FS_DIRECTORY:
-                    if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
-                        List_push(sub_dir_path_stack, file_system->relative_path,
-                                  (sizeof *file_system->relative_path) *
-                                      (strlen(file_system->relative_path) + 1));
+                    if (!path_is_dotted(filesystem->name, strlen(filesystem->name))) {
+                        List_push(sub_dir_path_stack, filesystem->relative_path,
+                                  (sizeof *filesystem->relative_path) *
+                                      (strlen(filesystem->relative_path) + 1));
                     }
                     break;
                 case FS_SYM_LINK:
                     break; /* TODO */
                 default:
-                    DBG_ERR("Unknown type %d", file_system->type);
+                    DBG_ERR("Unknown type %d", filesystem->type);
             }
         }
 
@@ -365,9 +409,10 @@ copy_local_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                            char *abs_path_local, char *abs_path_remote) {
     ListT *sub_dir_path_stack = List_new(1, sizeof(char *));
     ListT *local_dir;
-    FileSystemT *file_system;
+    FileSystemT *filesystem;
     char *dir_path_remote = NULL;
     char *dir_path_local = NULL;
+    char *file_path_remote = NULL;
 
     do {
         if (dir_path_remote == NULL || dir_path_local == NULL) {
@@ -375,40 +420,46 @@ copy_local_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
             dir_path_local = abs_path_local;
         } else {
             dir_path_local = List_pop(sub_dir_path_stack);
-            dir_path_remote = path_replace_grandparent(
-                dir_path_local, strlen(dir_path_local), abs_path_remote);
+            dir_path_remote = strdup(dir_path_local);
+            path_replace(dir_path_remote, abs_path_local, abs_path_remote, 1);
         }
 
-        create_remote_dir(session_ssh, session_sftp, dir_path_remote);
+        create_parents_remote(session_ssh, session_sftp, dir_path_remote);
         local_dir = path_read_local_dir(dir_path_local);
         if (local_dir == NULL) {
             return CMD_INTERNAL_ERROR;
         }
+        for (size_t i = 0; i < List_length(local_dir); i++) {
+            DBG_INFO("FILES: %s", ((FileSystemT *)List_get(local_dir, i))->name);
+        }
 
         for (size_t i = 0; i < local_dir->length; i++) {
-            file_system = List_get(local_dir, i);
+            filesystem = List_get(local_dir, i);
 
-            switch (file_system->type) {
-                case FS_REG_FILE:
-                    copy_file_from_local_to_remote(
-                        session_ssh, session_sftp, file_system->relative_path,
-                        path_replace_grandparent(file_system->relative_path,
-                                                 strlen(file_system->relative_path),
-                                                 abs_path_remote));
+            switch (filesystem->type) {
+                case FS_REG_FILE: {
+                    file_path_remote = strdup(filesystem->relative_path);
+                    path_replace(file_path_remote, abs_path_local, abs_path_remote, 1);
+                    copy_from_local_to_remote(session_ssh, session_sftp,
+                                              filesystem->relative_path,
+                                              file_path_remote);
+
                     break;
+                }
                 case FS_DIRECTORY:
-                    if (!path_is_dotted(file_system->name, strlen(file_system->name))) {
-                        List_push(sub_dir_path_stack, file_system->relative_path,
-                                  (sizeof *file_system->relative_path) *
-                                      (strlen(file_system->relative_path) + 1));
+                    if (!path_is_dotted(filesystem->name, strlen(filesystem->name))) {
+                        List_push(sub_dir_path_stack, filesystem->relative_path,
+                                  (sizeof *filesystem->relative_path) *
+                                      (strlen(filesystem->relative_path) + 1));
                     }
                     break;
                 case FS_SYM_LINK:
                     break; /* TODO */
                 default:
-                    DBG_ERR("Unknown type %d", file_system->type);
+                    DBG_ERR("Unknown type %d", filesystem->type);
             }
         }
+        dbg_safe_free(file_path_remote);
 
     } while (!List_is_empty(sub_dir_path_stack));
 
@@ -429,7 +480,8 @@ copy_from_remote_to_local(ssh_session session_ssh, sftp_session session_sftp,
     sftp_attributes from = sftp_stat(session_sftp, abs_path_remote);
 
     if (from == NULL) {
-        DBG_ERR("Failed to get attributes: %s", ssh_get_error(session_ssh));
+        DBG_ERR("Failed to get attributes for %s: %s", abs_path_remote,
+                ssh_get_error(session_ssh));
         return CMD_INTERNAL_ERROR;
     }
 
