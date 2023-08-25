@@ -117,7 +117,7 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
     FileSystemT *fs;
     ListT *dir_contents;
     ListT *formatted_contents = List_new(1, sizeof(char *));
-    char *filename = dbg_malloc(BUF_SIZE_FS_NAME);
+    char *filename = dbg_calloc(BUF_SIZE_FS_NAME, sizeof *filename);
     size_t width_screen = get_window_column_length();
 
     dir = sftp_opendir(session_sftp, directory);
@@ -150,9 +150,14 @@ list_remote_dir(ssh_session session_ssh, sftp_session session_sftp, char *direct
             List_push(formatted_contents, filename, strlen(filename) + 1);
         }
     }
-    char_list_format_columnwise(formatted_contents, width_screen, "    ");
-    dbg_safe_free(filename);
 
+    if (List_length(formatted_contents)) {
+        char_list_format_columnwise(formatted_contents, width_screen, "    ");
+    }
+
+    FileSystem_list_free(dir_contents);
+    List_free(formatted_contents);
+    dbg_safe_free(filename);
     return CMD_OK;
 }
 
@@ -233,7 +238,8 @@ create_parents_remote(ssh_session session_ssh, sftp_session session_sftp,
                 DBG_ERR("Permission Denied: directory %s could not be created", path_buf);
                 break;
             default:
-                DBG_ERR("Error while creating parent:%s:: %s\n", path_buf, ssh_get_error(session_ssh));
+                DBG_ERR("Error while creating parent:%s:: %s\n", path_buf,
+                        ssh_get_error(session_ssh));
                 break;
         }
     }
@@ -291,7 +297,7 @@ static CommandStatusE
 copy_file_from_local_to_remote(ssh_session session_ssh, sftp_session session_sftp,
                                char *abs_path_local, char *abs_path_remote) {
     int32_t num_bytes_read;
-    char file_buf[BUF_SIZE_FILE_CONTENTS + 1];
+    char file_buf[BUF_SIZE_FILE_CONTENTS + 1] = {0};
     struct stat from_file_stat;
     FILE *from_file;
     sftp_file to_file;
@@ -374,21 +380,23 @@ copy_remote_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
         for (size_t i = 0; i < remote_dir->length; i++) {
             filesystem = List_get(remote_dir, i);
 
+            puts(filesystem->name);
+            if (path_is_dotted(filesystem->name, strlen(filesystem->name))) {
+                continue;
+            }
+
             switch (filesystem->type) {
-                case FS_REG_FILE: {
+                case FS_REG_FILE:
                     file_path_local = strdup(filesystem->relative_path);
                     path_replace(file_path_local, abs_path_remote, abs_path_local, 1);
                     copy_from_remote_to_local(session_ssh, session_sftp,
                                               filesystem->relative_path, file_path_local);
 
                     break;
-                }
                 case FS_DIRECTORY:
-                    if (!path_is_dotted(filesystem->name, strlen(filesystem->name))) {
-                        List_push(sub_dir_path_stack, filesystem->relative_path,
-                                  (sizeof *filesystem->relative_path) *
-                                      (strlen(filesystem->relative_path) + 1));
-                    }
+                    List_push(sub_dir_path_stack, filesystem->relative_path,
+                              (sizeof *filesystem->relative_path) *
+                                  (strlen(filesystem->relative_path) + 1));
                     break;
                 case FS_SYM_LINK:
                     break; /* TODO */
@@ -429,15 +437,16 @@ copy_local_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
         if (local_dir == NULL) {
             return CMD_INTERNAL_ERROR;
         }
-        for (size_t i = 0; i < List_length(local_dir); i++) {
-            DBG_INFO("FILES: %s", ((FileSystemT *)List_get(local_dir, i))->name);
-        }
 
         for (size_t i = 0; i < local_dir->length; i++) {
             filesystem = List_get(local_dir, i);
 
+            if (path_is_dotted(filesystem->name, strlen(filesystem->name))) {
+                continue;
+            }
+
             switch (filesystem->type) {
-                case FS_REG_FILE: {
+                case FS_REG_FILE:
                     file_path_remote = strdup(filesystem->relative_path);
                     path_replace(file_path_remote, abs_path_local, abs_path_remote, 1);
                     copy_from_local_to_remote(session_ssh, session_sftp,
@@ -445,13 +454,10 @@ copy_local_dir_recursively(ssh_session session_ssh, sftp_session session_sftp,
                                               file_path_remote);
 
                     break;
-                }
                 case FS_DIRECTORY:
-                    if (!path_is_dotted(filesystem->name, strlen(filesystem->name))) {
-                        List_push(sub_dir_path_stack, filesystem->relative_path,
-                                  (sizeof *filesystem->relative_path) *
-                                      (strlen(filesystem->relative_path) + 1));
-                    }
+                    List_push(sub_dir_path_stack, filesystem->relative_path,
+                              (sizeof *filesystem->relative_path) *
+                                  (strlen(filesystem->relative_path) + 1));
                     break;
                 case FS_SYM_LINK:
                     break; /* TODO */
