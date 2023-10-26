@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "sftp_ansi_colors.h"
+#include "seft_ansi_colors.h"
 
 #define ICON_FOLDER ""
 #define ICON_GIT_FOLDER ""
