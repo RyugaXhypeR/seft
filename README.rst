@@ -1,11 +1,11 @@
-SFTP CLI
-========
+SEFT
+====
 
-.. image:: https://www.github.com/RyugaXhypeR/sftp-cli/actions/workflows/c-cpp.yml/badge.svg
+.. image:: https://www.github.com/RyugaXhypeR/seft/actions/workflows/c-cpp.yml/badge.svg
    :alt: Build Status
-   :target: https://github.com/RyugaXhypeR/sftp-cli/actions
+   :target: https://github.com/RyugaXhypeR/seft/actions
 
-A cli tool for interacting with SFTP servers.
+SEFT (SSH Encrypted File Transfer) is a cli tool for interacting with SFTP servers.
 
 
 Requirements
@@ -31,21 +31,21 @@ On Unix, Linux and macOS::
     make
     make install
 
-This will install sftp-cli as ``sftp_cli``.
+This will install seft as ``seft``.
 
 
 Usage
 -----
 
-After installation, the ``sftp_cli`` command will be available.
+After installation, the ``seft`` command will be available.
 
 You can use the ``--help`` option to get a list of available commands::
 
-    sftp_cli --help
+    seft --help
 
 Connecting to a server::
 
-    sftp_cli connect --subsystem <subsystem> --port <port>
+    seft connect --subsystem <subsystem> --port <port>
 
 
 License
