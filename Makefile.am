@@ -1,12 +1,12 @@
 AUTOMAKE_OPTIONS = subdir-objects
 
-bin_PROGRAMS = sftp_cli
-sftp_cli_SOURCES = sftp.c src/sftp_client.c src/sftp_list.c src/sftp_path.c src/sftp_utils.c
-sftp_cli_CFLAGS = $(C_FLAGS)
-sftp_cli_LDADD = $(LINK_FLAGS)
+bin_PROGRAMS = seft
+seft_SOURCES = seft.c src/seft_client.c src/seft_list.c src/seft_path.c src/seft_utils.c
+seft_CFLAGS = $(C_FLAGS)
+seft_LDADD = $(LINK_FLAGS)
 
 # If defined i.e D=DEBUG will display debug.
-D = NDEBUG
+D = NDEBUG -g
 LINK_FLAGS = -lssh
 INC_FLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/include
 OPT_FLAG = -O3
